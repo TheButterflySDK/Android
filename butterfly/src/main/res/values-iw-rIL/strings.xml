@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="language_code">he</string>
+    <string name="butterfly_btn_send">שלח</string>
+    <string name="butterfly_contact">דיווח אנונימי</string>
+    <string name="butterfly_failed_reply">נכשל</string>
+    <string name="butterfly_sent_reply">נשלח</string>
+    <string name="butterfly_comments_hint">הערות נוספות (זמנים מועדפים להתקשרות מצידנו)</string>
+    <string name="butterfly_way_to_contact_hint">איך ניתן ליצור איתך קשר? (מס׳ טלפון או כתובת מייל)</string>
+    <string name="butterfly_fake_contact_hint">האם להתקשר ממקום בדוי?(לדוגמה מקום העבודה)</string>
+    <string name="butterfly_no_connection_message">אין חיבור לאינטרנט</string>
+    <string name="butterfly_message_label_text">תרגישו חופשי לשלוח כאן את מה שעולה על רוחכם, המידע שישלח ישאר סודי ולא ישאיר עקבות. נתייחס בכובד ראש ולא ניקח החלטות פזיזות. בהצלחה</string>
+    <string name="butterfly_btn_cancel">ביטול</string>
+    <string name="butterfly_not_valid_api_key">השירות לא זמין עבור אפליקציה זו</string>
+</resources>
