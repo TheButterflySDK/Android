@@ -1,6 +1,7 @@
 # The Butterfly SDK for Android
 [![License: MIT](https://img.shields.io/badge/License-Apache-yellow.svg)](https://github.com/TheButterflySDK/Android/blob/main/LICENSE)
 [![](https://jitpack.io/v/TheButterflySDK/Android.svg)](https://jitpack.io/#TheButterflySDK/Android)
+[![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://github.com/TheButterflySDK/Android)
 
 The Butterfly SDK help your app to take an active part in the fight against domestic violent.
 
