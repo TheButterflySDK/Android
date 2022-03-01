@@ -8,7 +8,6 @@ import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.butterfly.sdk.ButterflySdk;
-import com.butterfly.thebutterflyhost_android.R;
 
 public class MainActivity extends AppCompatActivity {
 

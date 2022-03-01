@@ -1,4 +1,4 @@
-package com.butterfly.thebutterflyhost_android;
+package com.example.butterflyhost;
 
 import org.junit.Test;
 
