@@ -55,6 +55,8 @@ buildscript {
     }
 }
 
+apply plugin: 'maven-publish'
+
 // Configure your publications using the afterEvaluate() lifecycle method.
 afterEvaluate {
     publishing {
