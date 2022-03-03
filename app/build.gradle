@@ -28,5 +28,4 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation project(path: ':butterflysdk')
 //    implementation 'com.github.TheButterflySDK:Android:0.9.1'
-
 }

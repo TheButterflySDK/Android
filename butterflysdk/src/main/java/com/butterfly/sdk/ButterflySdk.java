@@ -12,9 +12,11 @@ public class ButterflySdk {
     }
 
     private static void openDialog(Activity activity, String apiKey) {
-        String languageCode = activity.getResources().getString(R.string.language_code);
-        String urlString = "https://butterfly-host.web.app/reporter?language=" + languageCode + "&api_key=" + apiKey +"&is-embedded-via-mobile-sdk=1";
+        if (apiKey == null || apiKey.isEmpty()) return;
 
-        activity.startActivity(new Intent(activity,WebViewerActivity.class).putExtra("url", urlString));
+        String languageCode = activity.getResources().getString(R.string.butterfly_language_code);
+        String urlString = "https://butterfly-host.web.app/reporter?language=" + languageCode + "&api_key=" + apiKey + "&is-embedded-via-mobile-sdk=1";
+
+        activity.startActivity(new Intent(activity, WebViewerActivity.class).putExtra("url", urlString));
     }
 }
