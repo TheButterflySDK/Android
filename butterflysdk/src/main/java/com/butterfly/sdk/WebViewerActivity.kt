@@ -1,7 +1,7 @@
 package com.butterfly.sdk
 
+import android.app.Activity
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -9,9 +9,8 @@ import android.view.ViewGroup
 import android.webkit.*
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.widget.LinearLayoutCompat
 
-class WebViewerActivity : AppCompatActivity() {
+class WebViewerActivity : Activity() {
     private var initialUrl: String? = null
     private lateinit var webView: WebView
 
@@ -27,7 +26,7 @@ class WebViewerActivity : AppCompatActivity() {
 
                 "page error" -> {
                     webView.removeSelf()
-                    val container: LinearLayoutCompat = findViewById(R.id.butterfly_web_view_main_view)
+                    val container: LinearLayout = findViewById(R.id.butterfly_web_view_main_view)
                     val txtView = TextView(applicationContext)
                     txtView.text = "Communication error!"
                     txtView.setOnClickListener {
