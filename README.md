@@ -34,7 +34,7 @@ In your app-level "build.gradle" file, put:
 To recognize your app in TheButterflySDK servers you'll need an application key. You can set it via code, as demonstrated here.
 In order to present our reporter, we'll need the current Activity.
 
-#### Example in Java (pretty much like Kotlin 🙂)
+#### Example in Java (pretty much like Kotlin 🤓)
 
 ```Java
     // Whenever you wish to open our screen, simply call:
