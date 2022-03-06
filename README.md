@@ -37,6 +37,6 @@ In order to present our reporter, we'll need the current Activity.
 #### Example in Java (pretty much like Kotlin 🤓)
 
 ```Java
-    // Whenever you wish to open our screen, simply call:
-    ButterflySdk.openReporter(activity, "YOUR_API_KEY");
+// Whenever you wish to open our screen, simply call:
+ButterflySdk.openReporter(activity, "YOUR_API_KEY");
 ```
