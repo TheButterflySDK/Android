@@ -67,7 +67,7 @@ class WebViewerActivity : Activity() {
             error: WebResourceError?
         ) {
             super.onReceivedError(view, request, error)
-            handler("page error")
+//            handler("page error")
         }
 
         override fun onReceivedHttpError(
@@ -76,7 +76,7 @@ class WebViewerActivity : Activity() {
             errorResponse: WebResourceResponse?
         ) {
             super.onReceivedHttpError(view, request, errorResponse)
-            handler("page error")
+//            handler("page error")
         }
 
         override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
