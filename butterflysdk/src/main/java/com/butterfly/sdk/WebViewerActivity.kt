@@ -64,7 +64,8 @@ class WebViewerActivity : Activity() {
         webView.settings.javaScriptEnabled = true
         webView.addJavascriptInterface(AndroidJavascriptInterface { resultString, commandId ->
             runOnUiThread {
-                webView.evaluateJavascript("bfPureJs.commandResults[$commandId] = $resultString>;") { result ->
+                val jsCommand = "bfPureJs.commandResults['$commandId'] = '$resultString';"
+                webView.evaluateJavascript(jsCommand) { result ->
                     Log.d(TAG, result)
                 }
             }
@@ -142,18 +143,17 @@ class WebViewerActivity : Activity() {
             when (commandName) {
                 "sendRequest" -> {
                     messageJson.remove("urlString")?.toString()?.let { urlString ->
-//                        messageJson.remove("commandId")?.toString()?.let { commandId ->
-                            messageJson.remove("key")?.toString()?.let { apiKey ->
-                                Communicator(urlString, messageJson, mapOf("butterfly_host_api_key" to apiKey)).call {
-                                    print(it)
-                                    var resultFromJs = "error"
-                                    if (it == "OK") {
-                                        resultFromJs = it
-                                    }
-                                    nativeCallbacksToJs.invoke(resultFromJs, "commandId")
+                        messageJson.remove("key")?.toString()?.let { apiKey ->
+                            val commandId = messageJson.remove("commandId")?.toString() ?: ""
+                            Communicator(urlString, messageJson, mapOf("butterfly_host_api_key" to apiKey)).call {
+                                print(it)
+                                var resultFromJs = "error"
+                                if (it == "OK") {
+                                    resultFromJs = it
                                 }
+                                nativeCallbacksToJs.invoke(resultFromJs, commandId)
                             }
-//                        }
+                        }
                     }
                 }
                 else -> {
