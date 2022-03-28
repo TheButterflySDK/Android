@@ -14,6 +14,10 @@ import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
 class WebViewerActivity : Activity() {
+    interface NavigationRequestsListener {
+        fun onNavigationRequest(urlString: String)
+    }
+
     companion object {
         val TAG: String get() {
             return WebViewerActivity::class.java.simpleName
@@ -26,33 +30,45 @@ class WebViewerActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_web_viewer)
         webView = findViewById(R.id.butterfly_web_view)
-        webView.webViewClient = ButterflyWebViewClient { messageFromWebPage ->
-            when (messageFromWebPage) {
-                "log" -> {
-                    Log.d(TAG, messageFromWebPage)
-                }
+        webView.webViewClient = ButterflyWebViewClient(object: NavigationRequestsListener {
+            override fun onNavigationRequest(urlString: String) {
+                if (urlString.isEmpty()) return
 
-                "cancel" -> {
-                    finish()
-                }
+                if (urlString.startsWith("https://the-butterfly.bridge/")) {
+                    urlString.split("https://the-butterfly.bridge/").lastOrNull()
+                        ?.let { messageFromWebPage ->
 
-                "page error" -> {
-                    webView.removeSelf()
-                    val container: LinearLayout = findViewById(R.id.butterfly_web_view_main_view)
-                    val txtView = TextView(applicationContext)
-                    txtView.text = "Communication error!"
-                    txtView.setOnClickListener {
-                        finish()
-                    }
-                    container.addView(txtView)
-                }
+                            when (messageFromWebPage) {
+                                "log" -> {
+                                    Log.d(TAG, messageFromWebPage)
+                                }
 
-                else -> Log.e(
-                    TAG,
-                    "unhandled message: $messageFromWebPage"
-                )
+                                "cancel" -> {
+                                    finish()
+                                }
+
+                                "page error" -> {
+                                    webView.removeSelf()
+                                    val container: LinearLayout =
+                                        findViewById(R.id.butterfly_web_view_main_view)
+                                    val txtView = TextView(applicationContext)
+                                    txtView.text = "Communication error!"
+                                    txtView.setOnClickListener {
+                                        finish()
+                                    }
+                                    container.addView(txtView)
+                                }
+
+                                else -> Log.e(
+                                    TAG,
+                                    "unhandled message: $messageFromWebPage"
+                                )
+                            }
+                        }
+                }
             }
-        }
+
+        })
 
         webView.settings.setSupportMultipleWindows(true)
 
@@ -76,7 +92,7 @@ class WebViewerActivity : Activity() {
         }
     }
 
-    private class ButterflyWebViewClient(val handler: (String) -> (Unit)) : WebViewClient() {
+    private class ButterflyWebViewClient(val navigationRequestsListener: NavigationRequestsListener) : WebViewClient() {
         override fun onLoadResource(view: WebView?, url: String?) {
             super.onLoadResource(view, url)
         }
@@ -109,13 +125,10 @@ class WebViewerActivity : Activity() {
             } else {
                 request?.toString() ?: ""
             }
+
             if (urlString.isEmpty()) return false
 
-            if (urlString.startsWith("https://the-butterfly.bridge/")) {
-                urlString.split("https://the-butterfly.bridge/").lastOrNull()?.let { messageFromWebPage ->
-                    handler(messageFromWebPage)
-                }
-            }
+            navigationRequestsListener.onNavigationRequest(urlString)
 
             if (urlString.startsWith("https://butterfly-host.web.app/")) {
                 view?.loadUrl(urlString)
@@ -183,7 +196,7 @@ class WebViewerActivity : Activity() {
                     connection.requestMethod = "POST"
                     connection.setRequestProperty("Content-Type", "application/json") // The format of the content we're sending to the server
                     headers.forEach { headerEntry ->
-                        connection.setRequestProperty(headerEntry.key, headerEntry.value);
+                        connection.setRequestProperty(headerEntry.key, headerEntry.value)
                     }
                     connection.setRequestProperty("Accept", "application/json") // The format of response we want to get from the server
                     connection.doInput = true
