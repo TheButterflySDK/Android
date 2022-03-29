@@ -25,7 +25,7 @@ In your root-level "build.gradle" file, put:
 In your app-level "build.gradle" file, put:
 ```
    dependencies {
-      implementation 'com.github.TheButterflySDK:Android:0.9.7'
+      implementation 'com.github.TheButterflySDK:Android:1.0.0'
    }
 ```
 
