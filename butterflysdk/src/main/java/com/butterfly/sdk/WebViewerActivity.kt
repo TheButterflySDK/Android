@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.webkit.*
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.butterfly.sdk.BuildConfig.DEBUG
 import org.json.JSONObject
 import java.io.*
 import java.net.URL
@@ -153,18 +154,24 @@ class WebViewerActivity : Activity() {
         fun postMessage(messageFromJs: String) {
             val messageJson = JSONObject(messageFromJs)
             val commandName = messageJson.remove("commandName")?.toString() ?: ""
+            val commandId = messageJson.remove("commandId")?.toString() ?: ""
+
             when (commandName) {
                 "sendRequest" -> {
                     messageJson.remove("urlString")?.toString()?.let { urlString ->
                         messageJson.remove("key")?.toString()?.let { apiKey ->
-                            val commandId = messageJson.remove("commandId")?.toString() ?: ""
-                            Communicator(urlString, messageJson, mapOf("butterfly_host_api_key" to apiKey)).call {
-                                print(it)
-                                var resultFromJs = "error"
-                                if (it == "OK") {
-                                    resultFromJs = it
+                            val butterflyApiKey: String = if (DEBUG && !apiKey.startsWith("debug-")) {
+                                "debug-$apiKey"
+                            } else {
+                                apiKey
+                            }
+
+                            Communicator(urlString, messageJson, mapOf("butterfly_host_api_key" to butterflyApiKey)).call { netwrokResult ->
+                                var resultString = "error"
+                                if (netwrokResult == "OK") {
+                                    resultString = netwrokResult
                                 }
-                                nativeCallbacksToJs.invoke(resultFromJs, commandId)
+                                nativeCallbacksToJs.invoke(resultString, commandId)
                             }
                         }
                     }
@@ -176,8 +183,7 @@ class WebViewerActivity : Activity() {
         }
     }
 
-    class Communicator(urlString: String, private val requestBody: JSONObject? = null, private val headers: Map<String, String> = mapOf()) {
-        private val url: URL = URL(urlString)
+    class Communicator(val urlString: String, private val requestBody: JSONObject? = null, private val headers: Map<String, String> = mapOf()) {
         private val threadHandler: Handler by lazy {
             val handlerThread = HandlerThread("BFCommunicator Thread")
             handlerThread.start()
@@ -187,6 +193,12 @@ class WebViewerActivity : Activity() {
         }
 
         fun call(callback: (String) -> Unit) {
+            if(urlString.isEmpty()) {
+                callback.invoke("")
+                return;
+            }
+
+            val url: URL = URL(urlString)
             val looper = Looper.myLooper() ?: return
             val callerHandler = Handler(looper)
             threadHandler.post {
