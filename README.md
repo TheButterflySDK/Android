@@ -43,7 +43,9 @@ ButterflySdk.openReporter(activity, "YOUR_API_KEY");
 
 ## Integration tests
 #### How?
-You can verify your application key by simply running the plugin in DEBUG mode. This will skip the part where the report is being sent to real support centers, our severs will ignore it and will only verify the API key. Eventually you'll get success / failure result.
+You can easily verify your application key 🔑 by simply running the SDK in **DEBUG mode**.
+
+This will cause our servers to skip the part of sending reports to real live support centers, they will only verify the API key. Eventually you'll get success / failure result.
 
 
 ### Enjoy and good luck ❤️
