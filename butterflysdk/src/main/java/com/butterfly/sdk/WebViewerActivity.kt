@@ -1,6 +1,8 @@
 package com.butterfly.sdk
 
 import android.app.Activity
+import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.os.*
 import android.util.Log
 import android.view.View
@@ -11,6 +13,7 @@ import android.widget.TextView
 import com.butterfly.sdk.BuildConfig.DEBUG
 import org.json.JSONObject
 import java.io.*
+import java.lang.ref.WeakReference
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
@@ -23,14 +26,30 @@ class WebViewerActivity : Activity() {
         val TAG: String get() {
             return WebViewerActivity::class.java.simpleName
         }
+
+        private var applicationContextWeakReference: WeakReference<Context>? = null
+        private val applicationContext: Context? get() {
+            return applicationContextWeakReference?.get()
+        }
+
+        private val isHostAppDebuggable: Boolean get() {
+            val applicationInfo = applicationContext?.applicationInfo ?: return false
+            val bitwiseAndResult = ApplicationInfo.FLAG_DEBUGGABLE and applicationInfo.flags
+            return 0 != bitwiseAndResult
+        }
+
     }
     private var initialUrl: String? = null
-    private lateinit var webView: WebView
-
+    private val webView: WebView by lazy {
+        val webView: WebView = WebView(this)
+        setContentView(webView)
+        webView
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
+        applicationContextWeakReference = WeakReference(this.applicationContext)
+
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_web_viewer)
-        webView = findViewById(R.id.butterfly_web_view)
+
         webView.webViewClient = ButterflyWebViewClient(object: NavigationRequestsListener {
             override fun onNavigationRequest(urlString: String) {
                 if (urlString.isEmpty()) return
@@ -150,6 +169,7 @@ class WebViewerActivity : Activity() {
     }
 
     class AndroidJavascriptInterface(private val nativeCallbacksToJs: (resultString: String, commandId: String) -> Unit) {
+
         @JavascriptInterface
         fun postMessage(messageFromJs: String) {
             val messageJson = JSONObject(messageFromJs)
@@ -160,7 +180,7 @@ class WebViewerActivity : Activity() {
                 "sendRequest" -> {
                     messageJson.remove("urlString")?.toString()?.let { urlString ->
                         messageJson.remove("key")?.toString()?.let { apiKey ->
-                            val butterflyApiKey: String = if (DEBUG && !apiKey.startsWith("debug-")) {
+                            val butterflyApiKey: String = if (isHostAppDebuggable && !apiKey.startsWith("debug-")) {
                                 "debug-$apiKey"
                             } else {
                                 apiKey
