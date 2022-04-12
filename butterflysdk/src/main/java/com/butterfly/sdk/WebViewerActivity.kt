@@ -1,18 +1,20 @@
 package com.butterfly.sdk
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.*
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.*
-import android.widget.LinearLayout
-import android.widget.TextView
-import com.butterfly.sdk.BuildConfig.DEBUG
+import android.widget.Button
+import com.butterfly.sdk.utils.SdkLogger
+import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
 import java.io.*
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
+
 
 class WebViewerActivity : Activity() {
     interface NavigationRequestsListener {
@@ -20,17 +22,61 @@ class WebViewerActivity : Activity() {
     }
 
     companion object {
+        fun open(activity: Activity, apiKey: String) {
+            Utils.saveContext(activity)
+            if (apiKey.isEmpty()) return
+
+            var languageCode = activity.resources.getString(R.string.butterfly_language_code)
+            languageCodeToOverride?.let {
+                languageCode = when (it) {
+                    ButterflySdk.ButterflyInterfaceLanguage.English -> "en"
+                    ButterflySdk.ButterflyInterfaceLanguage.Hebrew -> "he"
+                    else -> languageCode // Keep the original value
+                }
+            }
+
+            val customColorHexa = customColorHexaString ?: "n"
+
+            var countryCode = "n"
+            countryCodeToOverride?.let {
+                if (it.length == 2) {
+                    countryCode = it.lowercase()
+                }
+            }
+
+            val urlString =
+                "https://butterfly-host.web.app/reporter" +
+                        "?language=$languageCode" +
+                        "&api_key=$apiKey" +
+                        "&sdk-version=${Utils.BUTTERFLY_SDK_VERSION}" +
+                        "&override_country=${countryCode}" +
+                        "&colorize=${customColorHexa}" +
+                        "&is-embedded-via-mobile-sdk=1"
+
+            activity.startActivity(
+                Intent(activity, WebViewerActivity::class.java).putExtra(
+                    "url",
+                    urlString
+                )
+            )
+        }
+
         val TAG: String get() {
             return WebViewerActivity::class.java.simpleName
         }
+        var languageCodeToOverride: ButterflySdk.ButterflyInterfaceLanguage? = null
+        var countryCodeToOverride: String? = null
+        var customColorHexaString: String? = null // May be: "0xFF91BA48", "FF91BA48", "91BA48"
     }
+
     private var initialUrl: String? = null
-    private lateinit var webView: WebView
+    private val webView: WebView by lazy {
+        WebView(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_web_viewer)
-        webView = findViewById(R.id.butterfly_web_view)
+        setContentView(webView)
         webView.webViewClient = ButterflyWebViewClient(object: NavigationRequestsListener {
             override fun onNavigationRequest(urlString: String) {
                 if (urlString.isEmpty()) return
@@ -38,29 +84,44 @@ class WebViewerActivity : Activity() {
                 if (urlString.startsWith("https://the-butterfly.bridge/")) {
                     urlString.split("https://the-butterfly.bridge/").lastOrNull()
                         ?.let { messageFromWebPage ->
+                            val components = messageFromWebPage.split("::")
+                            val command = components.firstOrNull() ?: ""
 
-                            when (messageFromWebPage) {
+                            when (command) {
                                 "log" -> {
-                                    Log.d(TAG, messageFromWebPage)
+//                                    SdkLogger.log(TAG, messageFromWebPage)
                                 }
 
                                 "cancel" -> {
                                     finish()
                                 }
 
-                                "page error" -> {
-                                    webView.removeSelf()
-                                    val container: LinearLayout =
-                                        findViewById(R.id.butterfly_web_view_main_view)
-                                    val txtView = TextView(applicationContext)
-                                    txtView.text = "Communication error!"
-                                    txtView.setOnClickListener {
-                                        finish()
+                                "open" -> {
+                                    val url = components.lastOrNull() ?: ""
+                                    if (url.isNotEmpty()) {
+                                        try {
+                                            val i = Intent(Intent.ACTION_VIEW)
+                                            i.data = Uri.parse(url)
+                                            startActivity(i)
+                                        } catch (e: Throwable) {
+                                            SdkLogger.error(TAG, e)
+                                        }
                                     }
-                                    container.addView(txtView)
                                 }
 
-                                else -> Log.e(
+                                "page error" -> {
+                                    webView.removeSelf()
+//                                    val container: LinearLayout = findViewById(R.id.butterfly_web_view_main_view)
+                                    val btnQuit = Button(applicationContext)
+                                    btnQuit.text = "Communication error!"
+                                    btnQuit.setOnClickListener {
+                                        finish()
+                                    }
+//                                    webView.removeAllViews()
+                                    webView.addView(btnQuit)
+                                }
+
+                                else -> SdkLogger.error(
                                     TAG,
                                     "unhandled message: $messageFromWebPage"
                                 )
@@ -83,7 +144,7 @@ class WebViewerActivity : Activity() {
             runOnUiThread {
                 val jsCommand = "bfPureJs.commandResults['$commandId'] = '$resultString';"
                 webView.evaluateJavascript(jsCommand) { result ->
-                    Log.d(TAG, result)
+//                    Log.d(TAG, result)
                 }
             }
         }, "androidJavascriptInterface")
@@ -121,22 +182,23 @@ class WebViewerActivity : Activity() {
         }
 
         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+            var ignoreThis = true
             val urlString = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 request?.url?.toString() ?: ""
             } else {
                 request?.toString() ?: ""
             }
 
-            if (urlString.isEmpty()) return false
+            if (urlString.isEmpty()) return ignoreThis
 
             navigationRequestsListener.onNavigationRequest(urlString)
 
             if (urlString.startsWith("https://butterfly-host.web.app/")) {
                 view?.loadUrl(urlString)
-                return true
+                return ignoreThis
             }
 
-            return false
+            return ignoreThis
         }
     }
 
@@ -160,7 +222,7 @@ class WebViewerActivity : Activity() {
                 "sendRequest" -> {
                     messageJson.remove("urlString")?.toString()?.let { urlString ->
                         messageJson.remove("key")?.toString()?.let { apiKey ->
-                            val butterflyApiKey: String = if (DEBUG && !apiKey.startsWith("debug-")) {
+                            val butterflyApiKey: String = if (Utils.isDebuggable() && !apiKey.startsWith("debug-")) {
                                 "debug-$apiKey"
                             } else {
                                 apiKey
