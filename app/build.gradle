@@ -33,6 +33,6 @@ dependencies {
     if (shouldUseLocal) {
         implementation project(path: ':butterflysdk')
     } else {
-        implementation 'com.github.TheButterflySDK:Android:1.0.1'
+        implementation 'com.github.TheButterflySDK:Android:1.1.1'
     }
 }
