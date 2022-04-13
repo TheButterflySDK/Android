@@ -1,11 +1,36 @@
 package com.butterfly.sdk;
 
 import android.app.Activity;
-import android.content.Intent;
-import android.os.Handler;
-import android.os.HandlerThread;
 
 public class ButterflySdk {
+    public enum ButterflyInterfaceLanguage {
+        English,
+        Hebrew,
+    }
+
+    /**
+     * Sets the main user interface's language, no matter what's the language of the user's device.
+     * @param interfaceLanguage An enum represents the language, currently accepting only Hebrew or English.
+     */
+    public static void overrideLanguage(ButterflyInterfaceLanguage interfaceLanguage) {
+        WebViewerActivity.Companion.setLanguageCodeToOverride(interfaceLanguage);
+    }
+
+    /**
+     * Sets the country of the reporter that will be used in the Butterfly servers, no matter where it was really sent from.
+     * @param countryCode A two letters country code.
+     */
+    public static void overrideCountry(String countryCode) {
+        WebViewerActivity.Companion.setCountryCodeToOverride(countryCode);
+    }
+
+    /**
+     * Sets a new color theme of the Butterfly's screens
+     * @param customColorHexa A string represents the hexadecimal value of the color. Examples of possible formats: "0xFF91BA48", "FF91BA48", "91BA48"
+     */
+    public static void setCustomColor(String customColorHexa) {
+        WebViewerActivity.Companion.setCustomColorHexaString(customColorHexa);
+    }
 
     public static void openReporter(Activity activity, String key) {
         openDialog(activity, key);
@@ -14,9 +39,6 @@ public class ButterflySdk {
     private static void openDialog(Activity activity, String apiKey) {
         if (apiKey == null || apiKey.isEmpty()) return;
 
-        String languageCode = activity.getResources().getString(R.string.butterfly_language_code);
-        String urlString = "https://butterfly-host.web.app/reporter?language=" + languageCode + "&api_key=" + apiKey + "&is-embedded-via-mobile-sdk=1";
-
-        activity.startActivity(new Intent(activity, WebViewerActivity.class).putExtra("url", urlString));
+        WebViewerActivity.Companion.open(activity, apiKey);
     }
 }
