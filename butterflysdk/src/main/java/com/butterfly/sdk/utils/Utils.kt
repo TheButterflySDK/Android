@@ -7,7 +7,7 @@ import java.lang.ref.WeakReference
 
 class Utils {
     companion object {
-        const val BUTTERFLY_SDK_VERSION: String = "1.1.3"
+        const val BUTTERFLY_SDK_VERSION: String = "1.1.4"
 
         var isDebuggable: Boolean? = null
         var applicationContextWeakReference: WeakReference<Context>? = null
