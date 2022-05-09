@@ -45,7 +45,7 @@ class WebViewerActivity : Activity() {
             }
 
             val urlString =
-                "https://butterfly-host.web.app/reporter" +
+                "https://butterfly-host.web.app/reporter/" +
                         "?language=$languageCode" +
                         "&api_key=$apiKey" +
                         "&sdk-version=${Utils.BUTTERFLY_SDK_VERSION}" +
@@ -152,6 +152,15 @@ class WebViewerActivity : Activity() {
             initialUrl = url
             webView.loadUrl(url)
         }
+    }
+
+    override fun onStop() {
+        if (!isFinishing) {
+            // Going background => exit this screen.
+            finish()
+        }
+
+        super.onStop()
     }
 
     private class ButterflyWebViewClient(val navigationRequestsListener: NavigationRequestsListener) : WebViewClient() {
