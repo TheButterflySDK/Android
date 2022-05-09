@@ -11,14 +11,12 @@ import com.butterfly.sdk.ButterflySdk;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button button;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        button = findViewById(R.id.generate_button);
+        Button button = findViewById(R.id.generate_button);
         button.setText("🦋");
 
         final Activity activity = this;
