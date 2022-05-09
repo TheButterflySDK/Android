@@ -5,7 +5,7 @@ plugins {
 }
 
 ext {
-    TheButterflySdkVersion = '1.1.1'
+    TheButterflySdkVersion = '1.1.2'
 }
 
 group = 'com.github.TheButterflySdk'
@@ -35,7 +35,6 @@ android {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'androidx.core:core-ktx:1.7.0'
 }
 
 afterEvaluate {

@@ -28,7 +28,7 @@ public class ButterflySdk {
      * Sets a new color theme of the Butterfly's screens
      * @param customColorHexa A string represents the hexadecimal value of the color. Examples of possible formats: "0xFF91BA48", "FF91BA48", "91BA48"
      */
-    public static void setCustomColor(String customColorHexa) {
+    public static void useCustomColor(String customColorHexa) {
         WebViewerActivity.Companion.setCustomColorHexaString(customColorHexa);
     }
 
