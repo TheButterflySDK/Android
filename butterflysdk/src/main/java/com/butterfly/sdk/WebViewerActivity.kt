@@ -154,6 +154,13 @@ class WebViewerActivity : Activity() {
         }
     }
 
+    override fun onPause() {
+        // leave a blank screen because in any case it will exit by itself (so eventually it will hide the reporter from the "recent apps" view).
+        webView.removeSelf()
+
+        super.onPause()
+    }
+
     override fun onStop() {
         if (!isFinishing) {
             // Going background => exit this screen.
