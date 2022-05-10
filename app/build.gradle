@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
     buildToolsVersion "29.0.2"
     defaultConfig {
         applicationId "com.example.butterflyhost"
         minSdkVersion 23
-        targetSdkVersion 30
+        targetSdkVersion 31
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -32,6 +32,6 @@ dependencies {
     if (shouldUseLocal) {
         implementation project(path: ':butterflysdk')
     } else {
-        implementation 'com.github.TheButterflySDK:Android:1.1.2'
+        implementation 'com.github.TheButterflySDK:Android:1.1.5'
     }
 }

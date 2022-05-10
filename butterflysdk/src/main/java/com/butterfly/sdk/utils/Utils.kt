@@ -1,13 +1,12 @@
 package com.butterfly.sdk.utils
 
-import android.app.Activity
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import java.lang.ref.WeakReference
 
 class Utils {
     companion object {
-        const val BUTTERFLY_SDK_VERSION: String = "1.1.2"
+        const val BUTTERFLY_SDK_VERSION: String = "1.1.5"
 
         var isDebuggable: Boolean? = null
         var applicationContextWeakReference: WeakReference<Context>? = null
