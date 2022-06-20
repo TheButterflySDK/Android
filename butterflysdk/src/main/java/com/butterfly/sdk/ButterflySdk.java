@@ -3,16 +3,13 @@ package com.butterfly.sdk;
 import android.app.Activity;
 
 public class ButterflySdk {
-    public enum ButterflyInterfaceLanguage {
-        English,
-        Hebrew,
-    }
-
     /**
      * Sets the main user interface's language, no matter what's the language of the user's device.
      * @param interfaceLanguage An enum represents the language, currently accepting only Hebrew or English.
      */
-    public static void overrideLanguage(ButterflyInterfaceLanguage interfaceLanguage) {
+    public static void overrideLanguage(String interfaceLanguage) {
+        if(interfaceLanguage == null || interfaceLanguage.length() != 2) return;
+
         WebViewerActivity.Companion.setLanguageCodeToOverride(interfaceLanguage);
     }
 

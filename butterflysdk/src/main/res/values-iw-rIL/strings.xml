@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="butterfly_language_code">he</string>
+    <string name="the_butterfly_button">כפתור הפרפר</string>
     <string name="butterfly_btn_send">שלח</string>
     <string name="butterfly_contact">דיווח אנונימי</string>
     <string name="butterfly_failed_reply">נכשל</string>
