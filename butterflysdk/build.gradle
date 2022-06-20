@@ -5,7 +5,7 @@ plugins {
 }
 
 ext {
-    TheButterflySdkVersion = '1.2.1'
+    TheButterflySdkVersion = '1.2.3'
 }
 
 group = 'com.github.TheButterflySdk'
