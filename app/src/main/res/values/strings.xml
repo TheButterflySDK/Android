@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name" translatable="false">The Butterfly Host Example</string>
+    <string name="app_name" translatable="false">The Butterfly Button Example</string>
+    <string name="the_butterfly_button" translatable="false">The Butterfly Button</string>
 </resources>

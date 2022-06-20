@@ -1,6 +1,5 @@
 <resources>
     <string name="butterfly_language_code">en</string>
-    <string name="the_butterfly_button">The Butterfly Button</string>
     <string name="butterfly_btn_send">Send</string>
     <string name="butterfly_contact">Contact</string>
     <string name="butterfly_sent_reply">Sent!</string>
