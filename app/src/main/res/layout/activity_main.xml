@@ -4,10 +4,12 @@
     android:gravity="center"
     android:layout_height="match_parent" >
 
-    <Button
+    <ImageButton
+        android:src="@drawable/butterfly_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/generate_button"
-        android:gravity="center" />
+        android:gravity="center"
+        android:contentDescription="@string/the_butterfly_button" />
 
 </RelativeLayout>

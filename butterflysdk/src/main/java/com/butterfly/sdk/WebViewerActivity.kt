@@ -13,7 +13,10 @@ import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
 import java.io.*
 import java.net.URL
+import java.util.*
 import javax.net.ssl.HttpsURLConnection
+import kotlin.collections.ArrayList
+import kotlin.collections.HashSet
 
 
 class WebViewerActivity : Activity() {
@@ -26,12 +29,11 @@ class WebViewerActivity : Activity() {
             Utils.saveContext(activity)
             if (apiKey.isEmpty()) return
 
-            var languageCode = activity.resources.getString(R.string.butterfly_language_code)
+            var languageCode = Locale.getDefault().language
+
             languageCodeToOverride?.let {
-                languageCode = when (it) {
-                    ButterflySdk.ButterflyInterfaceLanguage.English -> "en"
-                    ButterflySdk.ButterflyInterfaceLanguage.Hebrew -> "he"
-                    else -> languageCode // Keep the original value
+                if (it.length == 2) {
+                    languageCode = it
                 }
             }
 
@@ -45,7 +47,7 @@ class WebViewerActivity : Activity() {
             }
 
             val urlString =
-                "https://butterfly-host.web.app/reporter/" +
+                "https://butterfly-button.web.app/reporter/" +
                         "?language=$languageCode" +
                         "&api_key=$apiKey" +
                         "&sdk-version=${Utils.BUTTERFLY_SDK_VERSION}" +
@@ -64,20 +66,21 @@ class WebViewerActivity : Activity() {
         val TAG: String get() {
             return WebViewerActivity::class.java.simpleName
         }
-        var languageCodeToOverride: ButterflySdk.ButterflyInterfaceLanguage? = null
+        var languageCodeToOverride: String? = null
         var countryCodeToOverride: String? = null
         var customColorHexaString: String? = null // May be: "0xFF91BA48", "FF91BA48", "91BA48"
+
+        private val urlWhiteList: HashSet<String> = HashSet()
     }
 
     private var initialUrl: String? = null
-    private val webView: WebView by lazy {
-        WebView(this)
-    }
+    private val webView: WebView by lazy { WebView(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(webView)
-        webView.webViewClient = ButterflyWebViewClient(object: NavigationRequestsListener {
+
+        val butterflyWebViewClient = ButterflyWebViewClient(object : NavigationRequestsListener {
             override fun onNavigationRequest(urlString: String) {
                 if (urlString.isEmpty()) return
 
@@ -111,13 +114,11 @@ class WebViewerActivity : Activity() {
 
                                 "page error" -> {
                                     webView.removeSelf()
-//                                    val container: LinearLayout = findViewById(R.id.butterfly_web_view_main_view)
                                     val btnQuit = Button(applicationContext)
                                     btnQuit.text = "Communication error!"
                                     btnQuit.setOnClickListener {
                                         finish()
                                     }
-//                                    webView.removeAllViews()
                                     webView.addView(btnQuit)
                                 }
 
@@ -131,6 +132,7 @@ class WebViewerActivity : Activity() {
             }
 
         })
+        webView.webViewClient = butterflyWebViewClient
 
         webView.settings.setSupportMultipleWindows(true)
 
@@ -140,14 +142,19 @@ class WebViewerActivity : Activity() {
         }
 
         webView.settings.javaScriptEnabled = true
-        webView.addJavascriptInterface(AndroidJavascriptInterface { resultString, commandId ->
-            runOnUiThread {
-                val jsCommand = "bfPureJs.commandResults['$commandId'] = '$resultString';"
-                webView.evaluateJavascript(jsCommand) { result ->
+        val nativeCallbacksToJs: (resultString: String, commandId: String) -> Unit =
+            { resultString, commandId ->
+                runOnUiThread {
+                    val jsCommand = "bfPureJs.commandResults['$commandId'] = '$resultString';"
+                    webView.evaluateJavascript(jsCommand) { result ->
 //                    Log.d(TAG, result)
+                    }
                 }
             }
-        }, "androidJavascriptInterface")
+
+        val androidJavascriptInterface = AndroidJavascriptInterface(nativeCallbacksToJs)
+        webView.addJavascriptInterface(androidJavascriptInterface, "androidJavascriptInterface")
+        androidJavascriptInterface.host = this
         intent?.getStringExtra("url")?.let { url ->
             initialUrl = url
             webView.loadUrl(url)
@@ -209,12 +216,16 @@ class WebViewerActivity : Activity() {
 
             navigationRequestsListener.onNavigationRequest(urlString)
 
-            if (urlString.startsWith("https://butterfly-host.web.app/")) {
+            if (isWhiteListed(urlString)) {
                 view?.loadUrl(urlString)
                 return ignoreThis
             }
 
             return ignoreThis
+        }
+
+        private fun isWhiteListed(urlString: String): Boolean {
+            return urlWhiteList.any { item -> urlString.startsWith(item) }
         }
     }
 
@@ -228,6 +239,8 @@ class WebViewerActivity : Activity() {
     }
 
     class AndroidJavascriptInterface(private val nativeCallbacksToJs: (resultString: String, commandId: String) -> Unit) {
+        lateinit var host: WebViewerActivity
+
         @JavascriptInterface
         fun postMessage(messageFromJs: String) {
             val messageJson = JSONObject(messageFromJs)
@@ -254,6 +267,25 @@ class WebViewerActivity : Activity() {
                         }
                     }
                 }
+
+                "navigateTo" -> {
+                    messageJson.remove("urlString")?.toString()?.let { urlString ->
+                        host.startActivity(
+                            Intent(host, WebViewerActivity::class.java).putExtra(
+                                "url",
+                                urlString
+                            )
+                        )
+                    }
+                }
+                
+                "allowNavigation" -> {
+                    messageJson.remove("urlString")?.toString()?.let { urlString ->
+                        urlWhiteList.add(urlString)
+                        nativeCallbacksToJs.invoke("OK", commandId)
+                    }
+                }
+
                 else -> {
                     // Unhandled command
                 }

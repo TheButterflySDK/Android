@@ -32,6 +32,7 @@ dependencies {
     if (shouldUseLocal) {
         implementation project(path: ':butterflysdk')
     } else {
-        implementation 'com.github.TheButterflySDK:Android:1.1.5'
+        // Make sure you're aiming to the latest version appear here: https://github.com/TheButterflySDK/Android#install-via-gradle
+        implementation 'com.github.TheButterflySDK:Android:1.2.3'
     }
 }
