@@ -11,7 +11,6 @@ import android.view.ViewGroup
 import android.webkit.*
 import android.widget.Button
 import android.widget.TextView
-import com.butterfly.sdk.utils.DeviceInfoFetcher
 import com.butterfly.sdk.utils.SdkLogger
 import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
@@ -310,10 +309,6 @@ class WebViewerActivity : Activity() {
                     } ?: run {
                         markAsHandled("", commandId)
                     }
-                }
-
-                "deviceInfo" -> {
-                    markAsHandled.invoke(JSONObject(DeviceInfoFetcher.getDeviceInfo()).toString(), commandId)
                 }
 
                 "allowNavigation" -> {
