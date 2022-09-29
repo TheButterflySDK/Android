@@ -4,9 +4,11 @@ import android.util.Log
 
 class SdkLogger {
     companion object {
-        fun log(tag: String, logMessage: String) {
+        fun log(tag: String, logMessage: Any?) {
+            if (logMessage == null) return
+
             if (Utils.isDebuggable()) {
-                Log.d(tag, logMessage)
+                Log.d(tag, logMessage.toString())
             }
         }
 

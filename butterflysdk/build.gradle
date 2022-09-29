@@ -5,7 +5,7 @@ plugins {
 }
 
 ext {
-    TheButterflySdkVersion = '1.2.3'
+    TheButterflySdkVersion = '1.3.1'
 }
 
 group = 'com.github.TheButterflySdk'
@@ -17,7 +17,7 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 31
-        versionCode 3
+        versionCode 4
         versionName TheButterflySdkVersion
     }
 

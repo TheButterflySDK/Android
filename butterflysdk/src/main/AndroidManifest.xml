@@ -9,6 +9,10 @@
         android:name=".WebViewerActivity"
         android:theme="@style/AppTheme.NoActionBar"
         android:exported="false" />
+        <provider
+            android:name=".BFContextProvider"
+            android:authorities="${applicationId}.com.butterfly.sdk.provider"
+            android:exported="false" />
     </application>
 
 </manifest>
