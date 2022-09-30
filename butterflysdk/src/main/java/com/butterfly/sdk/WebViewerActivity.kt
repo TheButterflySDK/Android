@@ -2,20 +2,23 @@ package com.butterfly.sdk
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.*
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.*
 import android.widget.Button
+import android.widget.TextView
 import com.butterfly.sdk.utils.SdkLogger
 import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
 import java.io.*
+import java.net.HttpURLConnection
 import java.net.URL
 import java.util.*
 import javax.net.ssl.HttpsURLConnection
-import kotlin.collections.ArrayList
 import kotlin.collections.HashSet
 
 
@@ -110,6 +113,7 @@ class WebViewerActivity : Activity() {
                                             SdkLogger.error(TAG, e)
                                         }
                                     }
+                                    markAsHandled("OK", command)
                                 }
 
                                 "page error" -> {
@@ -122,10 +126,13 @@ class WebViewerActivity : Activity() {
                                     webView.addView(btnQuit)
                                 }
 
-                                else -> SdkLogger.error(
-                                    TAG,
-                                    "unhandled message: $messageFromWebPage"
-                                )
+                                else -> {
+                                    SdkLogger.error(
+                                        TAG,
+                                        "unhandled message: $messageFromWebPage"
+                                    )
+                                    markAsHandled("", command)
+                                }
                             }
                         }
                 }
@@ -145,10 +152,7 @@ class WebViewerActivity : Activity() {
         val nativeCallbacksToJs: (resultString: String, commandId: String) -> Unit =
             { resultString, commandId ->
                 runOnUiThread {
-                    val jsCommand = "bfPureJs.commandResults['$commandId'] = '$resultString';"
-                    webView.evaluateJavascript(jsCommand) { result ->
-//                    Log.d(TAG, result)
-                    }
+                    markAsHandled(commandId, resultString)
                 }
             }
 
@@ -157,7 +161,32 @@ class WebViewerActivity : Activity() {
         androidJavascriptInterface.host = this
         intent?.getStringExtra("url")?.let { url ->
             initialUrl = url
-            webView.loadUrl(url)
+            if(url.isNotEmpty()) {
+//                request headers only before loading URL
+                Communicator.pingUrl(url, 5000) { isReachable ->
+                    if (isReachable) {
+                        webView.loadUrl(url)
+                    } else {
+                        webView.removeSelf()
+                        val errorTextView = TextView(this)
+                        errorTextView.text = "Disconnected ⛔️\n🔌"
+                        errorTextView.textSize = 30f
+                        errorTextView.setTextColor(Color.BLACK)
+                        errorTextView.gravity = Gravity.CENTER
+                        errorTextView.setOnClickListener {
+                            finish()
+                        }
+                        setContentView(errorTextView)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun markAsHandled(commandId: String, result: String) {
+        val jsCommand = "bfPureJs.commandResults['$commandId'] = '$result';"
+        webView.evaluateJavascript(jsCommand) { evaluationResult ->
+            SdkLogger.log(TAG, evaluationResult)
         }
     }
 
@@ -238,7 +267,7 @@ class WebViewerActivity : Activity() {
         }
     }
 
-    class AndroidJavascriptInterface(private val nativeCallbacksToJs: (resultString: String, commandId: String) -> Unit) {
+    class AndroidJavascriptInterface(private val markAsHandled: (resultString: String, commandId: String) -> Unit) {
         lateinit var host: WebViewerActivity
 
         @JavascriptInterface
@@ -257,12 +286,12 @@ class WebViewerActivity : Activity() {
                                 apiKey
                             }
 
-                            Communicator(urlString, messageJson, mapOf("butterfly_host_api_key" to butterflyApiKey)).call { netwrokResult ->
+                            Communicator(urlString, messageJson, mapOf("butterfly_host_api_key" to butterflyApiKey)).call { networkResult ->
                                 var resultString = "error"
-                                if (netwrokResult == "OK") {
-                                    resultString = netwrokResult
+                                if (networkResult == "OK") {
+                                    resultString = networkResult
                                 }
-                                nativeCallbacksToJs.invoke(resultString, commandId)
+                                markAsHandled.invoke(resultString, commandId)
                             }
                         }
                     }
@@ -276,43 +305,81 @@ class WebViewerActivity : Activity() {
                                 urlString
                             )
                         )
+                        markAsHandled("OK", commandId)
+                    } ?: run {
+                        markAsHandled("", commandId)
                     }
                 }
-                
+
                 "allowNavigation" -> {
                     messageJson.remove("urlString")?.toString()?.let { urlString ->
                         urlWhiteList.add(urlString)
-                        nativeCallbacksToJs.invoke("OK", commandId)
+                        markAsHandled.invoke("OK", commandId)
+                    } ?: run {
+                        markAsHandled("", commandId)
                     }
                 }
 
                 else -> {
-                    // Unhandled command
+                    markAsHandled("", commandId)
                 }
             }
         }
     }
 
-    class Communicator(val urlString: String, private val requestBody: JSONObject? = null, private val headers: Map<String, String> = mapOf()) {
-        private val threadHandler: Handler by lazy {
-            val handlerThread = HandlerThread("BFCommunicator Thread")
-            handlerThread.start()
-            val handler = Handler(handlerThread.looper)
+    class Communicator(private val urlString: String, private val requestBody: JSONObject? = null, private val headers: Map<String, String> = mapOf()) {
+        companion object {
 
-            handler
+            private val bgThreadHandler: Handler by lazy {
+                val handlerThread = HandlerThread("BFCommunicator Thread")
+                handlerThread.start()
+                val handler = Handler(handlerThread.looper)
+
+                handler
+            }
+
+            // Ref: https://stackoverflow.com/a/3584332/2735029
+            fun pingUrl(url: String, timeout: Int, callback: (Boolean) -> Unit) {
+//                var url = url
+//                url = url.replaceFirst(
+//                    "^https".toRegex(),
+//                    "http"
+//                ) // (???) Otherwise an exception may be thrown on invalid SSL certificates.
+                val looper = Looper.myLooper() ?: return
+                val callerHandler = Handler(looper)
+                bgThreadHandler.post {
+                    val isReachable = try {
+                        val connection: HttpURLConnection =
+                            URL(url).openConnection() as HttpURLConnection
+                        connection.connectTimeout = timeout
+                        connection.readTimeout = timeout
+                        connection.requestMethod = "HEAD"
+                        val responseCode: Int = connection.responseCode
+                        responseCode in 200..399
+                    } catch (exception: IOException) {
+                        SdkLogger.error(TAG, exception)
+                        false
+                    }
+
+                    callerHandler.post {
+                        callback.invoke(isReachable)
+                    }
+                }
+            }
         }
 
         fun call(callback: (String) -> Unit) {
             if(urlString.isEmpty()) {
                 callback.invoke("")
-                return;
+                return
             }
 
             val url: URL = URL(urlString)
             val looper = Looper.myLooper() ?: return
             val callerHandler = Handler(looper)
-            threadHandler.post {
+            bgThreadHandler.post {
                 try {
+                    var responseString = ""
                     // Thanks a lot to: https://johncodeos.com/post-get-put-delete-requests-with-httpurlconnection/
                     val connection = url.openConnection() as HttpsURLConnection
                     connection.requestMethod = "POST"
@@ -329,11 +396,11 @@ class WebViewerActivity : Activity() {
                     outputStreamWriter.write(requestBody.toString())
                     outputStreamWriter.flush()
 
-                    var responseString = ""
                     // Check if the connection is successful
                     val responseCode = connection.responseCode
                     if (responseCode == HttpsURLConnection.HTTP_OK) {
-                        responseString = connection.inputStream.bufferedReader().use { it.readText() }  // defaults to UTF-8
+                        responseString = connection.inputStream.bufferedReader()
+                            .use { it.readText() }  // defaults to UTF-8
 //                        Log.d("Pretty Printed JSON :", responseString)
                     } else {
                         //Log.e("HTTPS URL CONNECTION ERROR", responseCode.toString())
@@ -348,6 +415,10 @@ class WebViewerActivity : Activity() {
             }
         }
     }
+}
+
+private fun <K, V> Map<K, V>.toJsonString(): String {
+    return JSONObject(this).toString()
 }
 
 private fun View.removeSelf() {

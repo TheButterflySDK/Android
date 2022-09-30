@@ -11,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.butterfly.sdk.ButterflySdk;
 
 public class MainActivity extends AppCompatActivity {
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -26,6 +25,5 @@ public class MainActivity extends AppCompatActivity {
                 ButterflySdk.openReporter(activity,"your-api-key");
             }
         });
-
     }
 }
