@@ -77,7 +77,12 @@ class WebViewerActivity : Activity() {
     }
 
     private var initialUrl: String? = null
-    private val webView: WebView by lazy { WebView(this) }
+    private val webView: WebView by lazy {
+        val w = WebView(this)
+        w.settings.textZoom = 100
+
+        return@lazy w
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -234,7 +239,7 @@ class WebViewerActivity : Activity() {
         }
 
         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-            var ignoreThis = true
+            val ignoreThis = true
             val urlString = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 request?.url?.toString() ?: ""
             } else {
@@ -316,6 +321,23 @@ class WebViewerActivity : Activity() {
                         urlWhiteList.add(urlString)
                         markAsHandled.invoke("OK", commandId)
                     } ?: run {
+                        markAsHandled("", commandId)
+                    }
+                }
+
+                "open" -> {
+                    try {
+                        val url = messageJson.getJSONArray("components").get(0).toString()
+                        if (url.isNotEmpty()) {
+                            val intent = Intent(Intent.ACTION_VIEW)
+                            intent.data = Uri.parse(url)
+                            host.startActivity(intent)
+                            markAsHandled.invoke("OK", commandId)
+                        } else {
+                            markAsHandled("", commandId)
+                        }
+                    } catch (e: Throwable) {
+                        SdkLogger.error(TAG, e)
                         markAsHandled("", commandId)
                     }
                 }
