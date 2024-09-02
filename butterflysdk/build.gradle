@@ -12,12 +12,12 @@ group = 'com.github.TheButterflySdk'
 version = ext.TheButterflySdkVersion
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 34
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 31
-        versionCode 4
+        versionCode 5
+        targetSdkVersion 34
         versionName TheButterflySdkVersion
     }
 

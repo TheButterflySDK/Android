@@ -1,5 +1,6 @@
 package com.butterfly.sdk
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
@@ -28,6 +29,8 @@ class WebViewerActivity : Activity() {
     }
 
     companion object {
+        private const val SHOULD_DISAPPEAR_ON_BLUR: Boolean = false
+
         fun open(activity: Activity, apiKey: String) {
             Utils.saveContext(activity)
             if (apiKey.isEmpty()) return
@@ -77,8 +80,18 @@ class WebViewerActivity : Activity() {
     }
 
     private var initialUrl: String? = null
-    private val webView: WebView by lazy { WebView(this) }
+    private var deviceRequestedTextZoom = 100
+    private val webView: WebView by lazy {
+        val w = WebView(this)
+        // Keep for later use
+        deviceRequestedTextZoom = w.settings.textZoom
+        // Reset
+        w.settings.textZoom = 100
 
+        return@lazy w
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(webView)
@@ -191,16 +204,20 @@ class WebViewerActivity : Activity() {
     }
 
     override fun onPause() {
-        // leave a blank screen because in any case it will exit by itself (so eventually it will hide the reporter from the "recent apps" view).
-        webView.removeSelf()
+        if (SHOULD_DISAPPEAR_ON_BLUR) {
+            // leave a blank screen because in any case it will exit by itself (so eventually it will hide the reporter from the "recent apps" view).
+            webView.removeSelf()
+        }
 
         super.onPause()
     }
 
     override fun onStop() {
-        if (!isFinishing) {
-            // Going background => exit this screen.
-            finish()
+        if (SHOULD_DISAPPEAR_ON_BLUR) {
+            if (!isFinishing) {
+                // Going background => exit this screen.
+                finish()
+            }
         }
 
         super.onStop()
@@ -316,6 +333,23 @@ class WebViewerActivity : Activity() {
                         urlWhiteList.add(urlString)
                         markAsHandled.invoke("OK", commandId)
                     } ?: run {
+                        markAsHandled("", commandId)
+                    }
+                }
+
+                "open" -> {
+                    try {
+                        val url = messageJson.getJSONArray("components").get(0).toString()
+                        if (url.isNotEmpty()) {
+                            val intent = Intent(Intent.ACTION_VIEW)
+                            intent.data = Uri.parse(url)
+                            host.startActivity(intent)
+                            markAsHandled.invoke("OK", commandId)
+                        } else {
+                            markAsHandled("", commandId)
+                        }
+                    } catch (e: Throwable) {
+                        SdkLogger.error(TAG, e)
                         markAsHandled("", commandId)
                     }
                 }
