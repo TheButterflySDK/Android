@@ -19,7 +19,7 @@ android {
 }
 
 ext {
-    shouldUseLocal = true
+    shouldUseLocal = false
 }
 
 dependencies {
@@ -32,6 +32,6 @@ dependencies {
         implementation project(path: ':butterflysdk')
     } else {
         // Make sure you're aiming to the latest version appear here: https://github.com/TheButterflySDK/Android#install-via-gradle
-        implementation 'com.github.TheButterflySDK:Android:2.0.0'
+        implementation 'com.github.TheButterflySDK:Android:2.0.1'
     }
 }
