@@ -19,7 +19,7 @@ android {
 }
 
 ext {
-    shouldUseLocal = false
+    shouldUseLocal = true
 }
 
 dependencies {
