@@ -3,24 +3,35 @@ package com.butterfly.sdk
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.content.res.Resources
 import android.graphics.Color
 import android.net.Uri
-import android.os.*
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.*
+import android.webkit.JavascriptInterface
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Button
+import android.widget.RelativeLayout
 import android.widget.TextView
 import com.butterfly.sdk.utils.SdkLogger
 import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
-import java.io.*
+import java.io.IOException
+import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.*
+import java.util.Locale
 import javax.net.ssl.HttpsURLConnection
-import kotlin.collections.HashSet
 
 
 class WebViewerActivity : Activity() {
@@ -79,6 +90,7 @@ class WebViewerActivity : Activity() {
         private val urlWhiteList: HashSet<String> = HashSet()
     }
 
+    private lateinit var layout: RelativeLayout
     private var initialUrl: String? = null
     private var deviceRequestedTextZoom = 100
     private val webView: WebView by lazy {
@@ -94,7 +106,30 @@ class WebViewerActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(webView)
+        layout = RelativeLayout(this)
+        layout.addView(webView, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
+        setContentView(layout)
+        val params = RelativeLayout.LayoutParams(
+                40.dpToPx(),
+                40.dpToPx(),
+        ).apply {
+            addRule(RelativeLayout.ALIGN_PARENT_TOP)
+            addRule(RelativeLayout.ALIGN_PARENT_END) // Use ALIGN_PARENT_RIGHT for older versions
+            marginEnd = 6 // margin right
+            topMargin = 16 // margin top
+        }
+
+        layout.addView(TextView(this).apply {
+            text = "𝚇"
+            textSize = 16f
+            setTextColor(Color.WHITE)
+            setBackgroundResource(R.drawable.butterfly_semi_transparent_round_bg)
+            gravity = Gravity.CENTER
+
+            setOnClickListener {
+                beGone()
+            }
+        }, params)
 
         val butterflyWebViewClient = ButterflyWebViewClient(object : NavigationRequestsListener {
             override fun onNavigationRequest(urlString: String) {
@@ -112,7 +147,7 @@ class WebViewerActivity : Activity() {
                                 }
 
                                 "cancel" -> {
-                                    finish()
+                                    beGone()
                                 }
 
                                 "open" -> {
@@ -194,6 +229,10 @@ class WebViewerActivity : Activity() {
                 }
             }
         }
+    }
+
+    private fun beGone() {
+        finish()
     }
 
     private fun markAsHandled(commandId: String, result: String) {
@@ -284,7 +323,11 @@ class WebViewerActivity : Activity() {
         }
     }
 
-    class AndroidJavascriptInterface(private val markAsHandled: (resultString: String, commandId: String) -> Unit) {
+    private fun Int.dpToPx(): Int {
+        return (this * Resources.getSystem().displayMetrics.density).toInt()
+    }
+
+    private class AndroidJavascriptInterface(private val markAsHandled: (resultString: String, commandId: String) -> Unit) {
         lateinit var host: WebViewerActivity
 
         @JavascriptInterface
@@ -361,7 +404,7 @@ class WebViewerActivity : Activity() {
         }
     }
 
-    class Communicator(private val urlString: String, private val requestBody: JSONObject? = null, private val headers: Map<String, String> = mapOf()) {
+    private class Communicator(private val urlString: String, private val requestBody: JSONObject? = null, private val headers: Map<String, String> = mapOf()) {
         companion object {
 
             private val bgThreadHandler: Handler by lazy {
