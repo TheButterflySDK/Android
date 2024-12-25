@@ -66,6 +66,7 @@ class WebViewerActivity : Activity() {
             }
 
             var baseUrl = "https://butterfly-button.web.app/reporter/"
+
             try {
                 val appInfo = activity.packageManager.getApplicationInfo(activity.packageName, PackageManager.GET_META_DATA)
                 baseUrl = appInfo.metaData?.getString("com.butterfly.sdk.BASE_URL") ?: baseUrl
@@ -141,6 +142,7 @@ class WebViewerActivity : Activity() {
                 beGone()
             }
         }
+
         layout.addView(closeButton, closeButtonRelativeLayoutParams)
 
         val butterflyWebViewClient = ButterflyWebViewClient(object : NavigationRequestsListener {
