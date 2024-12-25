@@ -3,6 +3,7 @@ package com.butterfly.sdk
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Color
 import android.net.Uri
@@ -28,6 +29,7 @@ import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
 import java.io.IOException
 import java.io.OutputStreamWriter
+import java.lang.Exception
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
@@ -63,8 +65,16 @@ class WebViewerActivity : Activity() {
                 }
             }
 
+            var baseUrl = "https://butterfly-button.web.app/reporter/"
+            try {
+                val appInfo = activity.packageManager.getApplicationInfo(activity.packageName, PackageManager.GET_META_DATA)
+                baseUrl = appInfo.metaData?.getString("com.butterfly.sdk.BASE_URL") ?: baseUrl
+            } catch (e: Exception) {
+                // Ignore
+            }
+
             val urlString =
-                "https://butterfly-button.web.app/reporter/" +
+                baseUrl +
                         "?language=$languageCode" +
                         "&api_key=$apiKey" +
                         "&sdk-version=${Utils.BUTTERFLY_SDK_VERSION}" +
@@ -109,9 +119,10 @@ class WebViewerActivity : Activity() {
         layout = RelativeLayout(this)
         layout.addView(webView, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
         setContentView(layout)
-        val params = RelativeLayout.LayoutParams(
-                40.dpToPx(),
-                40.dpToPx(),
+
+        val closeButtonRelativeLayoutParams = RelativeLayout.LayoutParams(
+                35.dpToPx(),
+                35.dpToPx(),
         ).apply {
             addRule(RelativeLayout.ALIGN_PARENT_TOP)
             addRule(RelativeLayout.ALIGN_PARENT_END) // Use ALIGN_PARENT_RIGHT for older versions
@@ -119,17 +130,18 @@ class WebViewerActivity : Activity() {
             topMargin = 16 // margin top
         }
 
-        layout.addView(TextView(this).apply {
-            text = "𝚇"
+        val closeButton = TextView(this).apply {
+            text = "ⓧ"
             textSize = 16f
-            setTextColor(Color.WHITE)
+            setTextColor(Color.BLACK)
             setBackgroundResource(R.drawable.butterfly_semi_transparent_round_bg)
             gravity = Gravity.CENTER
 
             setOnClickListener {
                 beGone()
             }
-        }, params)
+        }
+        layout.addView(closeButton, closeButtonRelativeLayoutParams)
 
         val butterflyWebViewClient = ButterflyWebViewClient(object : NavigationRequestsListener {
             override fun onNavigationRequest(urlString: String) {
