@@ -134,7 +134,7 @@ class WebViewerActivity : Activity() {
             text = "ⓧ"
             textSize = 16f
             setTextColor(Color.BLACK)
-            setBackgroundResource(R.drawable.butterfly_semi_transparent_round_bg)
+//            setBackgroundResource(R.drawable.butterfly_semi_transparent_round_bg)
             gravity = Gravity.CENTER
 
             setOnClickListener {
