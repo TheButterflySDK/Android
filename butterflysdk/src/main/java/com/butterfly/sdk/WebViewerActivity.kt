@@ -237,9 +237,6 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         val shouldClearCache = intent?.getBooleanExtra(IntentExtraKeys.SHOULD_CLEAR_CACHE, false) ?: false
         if (shouldClearCache) {
             // from: https://stackoverflow.com/questions/34572748/how-to-make-android-webview-clear-cache
-//            val webSettings = webView.getSettings()
-//            webSettings.appCacheEnabled = false
-//            webSettings.setAppCacheEnabled(false)
             webView.clearCache(true)
             webView.loadUrl("about:blank")
             webView.reload()
@@ -248,7 +245,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         intent?.getStringExtra(IntentExtraKeys.URL)?.let { url ->
             initialUrl = url
             if (url.isEmpty()) return@let
-//                request headers only before loading URL
+            // Request headers only before loading URL
             Communicator.pingUrl(url, 5000) { isReachable ->
                 if (isReachable) {
                     webView.loadUrl(url)
@@ -272,7 +269,6 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         // Close all open activities if they're open
         EventBus.notify(CloseAllEvent(this))
 
-        webView.removeSelf()
         finish()
     }
 

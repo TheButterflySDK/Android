@@ -23,7 +23,7 @@ class EventBus {
                             }
                         }
                     }
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     //
                 }
             }
