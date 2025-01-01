@@ -24,19 +24,24 @@ import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.RelativeLayout
 import android.widget.TextView
+import com.butterfly.sdk.utils.EventBus
 import com.butterfly.sdk.utils.SdkLogger
 import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
 import java.io.IOException
 import java.io.OutputStreamWriter
-import java.lang.Exception
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
 import javax.net.ssl.HttpsURLConnection
 
+class WebViewerActivity: Activity(), EventBus.Listener {
+    class CloseAllEvent(val data: Activity) : EventBus.Event()
+    private object IntentExtraKeys {
+        const val URL = "url"
+        const val SHOULD_CLEAR_CACHE = "shouldClearCache"
+    }
 
-class WebViewerActivity : Activity() {
     interface NavigationRequestsListener {
         fun onNavigationRequest(urlString: String)
     }
@@ -66,10 +71,15 @@ class WebViewerActivity : Activity() {
             }
 
             var baseUrl = "https://butterfly-button.web.app/reporter/"
-
+            var shouldClearCache = false
             try {
                 val appInfo = activity.packageManager.getApplicationInfo(activity.packageName, PackageManager.GET_META_DATA)
-                baseUrl = appInfo.metaData?.getString("com.butterfly.sdk.BASE_URL") ?: baseUrl
+                appInfo.metaData?.getString("com.butterfly.sdk.BASE_URL")?.let { customBaseUrl ->
+                    if (baseUrl != customBaseUrl) {
+                        baseUrl = customBaseUrl
+                        shouldClearCache = true
+                    }
+                }
             } catch (e: Exception) {
                 // Ignore
             }
@@ -84,10 +94,9 @@ class WebViewerActivity : Activity() {
                         "&is-embedded-via-mobile-sdk=1"
 
             activity.startActivity(
-                Intent(activity, WebViewerActivity::class.java).putExtra(
-                    "url",
-                    urlString
-                )
+                Intent(activity, WebViewerActivity::class.java)
+                        .putExtra(IntentExtraKeys.URL, urlString)
+                        .putExtra(IntentExtraKeys.SHOULD_CLEAR_CACHE, shouldClearCache)
             )
         }
 
@@ -101,6 +110,7 @@ class WebViewerActivity : Activity() {
         private val urlWhiteList: HashSet<String> = HashSet()
     }
 
+    private var token: EventBus.ListenerToken? = null
     private lateinit var layout: RelativeLayout
     private var initialUrl: String? = null
     private var deviceRequestedTextZoom = 100
@@ -117,6 +127,8 @@ class WebViewerActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        token = EventBus.addListener(this, CloseAllEvent::class.java)
         layout = RelativeLayout(this)
         layout.addView(webView, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
         setContentView(layout)
@@ -221,31 +233,46 @@ class WebViewerActivity : Activity() {
         val androidJavascriptInterface = AndroidJavascriptInterface(nativeCallbacksToJs)
         webView.addJavascriptInterface(androidJavascriptInterface, "androidJavascriptInterface")
         androidJavascriptInterface.host = this
-        intent?.getStringExtra("url")?.let { url ->
+
+        val shouldClearCache = intent?.getBooleanExtra(IntentExtraKeys.SHOULD_CLEAR_CACHE, false) ?: false
+        if (shouldClearCache) {
+            // from: https://stackoverflow.com/questions/34572748/how-to-make-android-webview-clear-cache
+//            val webSettings = webView.getSettings()
+//            webSettings.appCacheEnabled = false
+//            webSettings.setAppCacheEnabled(false)
+            webView.clearCache(true)
+            webView.loadUrl("about:blank")
+            webView.reload()
+        }
+
+        intent?.getStringExtra(IntentExtraKeys.URL)?.let { url ->
             initialUrl = url
-            if(url.isNotEmpty()) {
+            if (url.isEmpty()) return@let
 //                request headers only before loading URL
-                Communicator.pingUrl(url, 5000) { isReachable ->
-                    if (isReachable) {
-                        webView.loadUrl(url)
-                    } else {
-                        webView.removeSelf()
-                        val errorTextView = TextView(this)
-                        errorTextView.text = "Disconnected ⛔️\n🔌"
-                        errorTextView.textSize = 30f
-                        errorTextView.setTextColor(Color.BLACK)
-                        errorTextView.gravity = Gravity.CENTER
-                        errorTextView.setOnClickListener {
-                            finish()
-                        }
-                        setContentView(errorTextView)
+            Communicator.pingUrl(url, 5000) { isReachable ->
+                if (isReachable) {
+                    webView.loadUrl(url)
+                } else {
+                    webView.removeSelf()
+                    val errorTextView = TextView(this)
+                    errorTextView.text = "Disconnected ⛔️\n🔌"
+                    errorTextView.textSize = 30f
+                    errorTextView.setTextColor(Color.BLACK)
+                    errorTextView.gravity = Gravity.CENTER
+                    errorTextView.setOnClickListener {
+                        finish()
                     }
+                    setContentView(errorTextView)
                 }
             }
         }
     }
 
     private fun beGone() {
+        // Close all open activities if they're open
+        EventBus.notify(CloseAllEvent(this))
+
+        webView.removeSelf()
         finish()
     }
 
@@ -274,6 +301,11 @@ class WebViewerActivity : Activity() {
         }
 
         super.onStop()
+    }
+
+    override fun onDestroy() {
+        token?.remove()
+        super.onDestroy()
     }
 
     private class ButterflyWebViewClient(val navigationRequestsListener: NavigationRequestsListener) : WebViewClient() {
@@ -328,6 +360,7 @@ class WebViewerActivity : Activity() {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         val initialUrl = this.initialUrl ?: ""
         if (webView.canGoBack() && webView.url != initialUrl) {
@@ -375,7 +408,7 @@ class WebViewerActivity : Activity() {
                     messageJson.remove("urlString")?.toString()?.let { urlString ->
                         host.startActivity(
                             Intent(host, WebViewerActivity::class.java).putExtra(
-                                "url",
+                                IntentExtraKeys.URL,
                                 urlString
                             )
                         )
@@ -506,12 +539,19 @@ class WebViewerActivity : Activity() {
             }
         }
     }
-}
 
-private fun <K, V> Map<K, V>.toJsonString(): String {
-    return JSONObject(this).toString()
-}
+    override fun onEvent(event: EventBus.Event) {
+        val closeAllEvent = (event as? CloseAllEvent) ?: return
+        if (closeAllEvent.data != this) {
+            finish()
+        }
+    }
 
-private fun View.removeSelf() {
-    (parent as? ViewGroup)?.removeView(this)
+    private fun <K, V> Map<K, V>.toJsonString(): String {
+        return JSONObject(this).toString()
+    }
+
+    private fun View.removeSelf() {
+        (parent as? ViewGroup)?.removeView(this)
+    }
 }
