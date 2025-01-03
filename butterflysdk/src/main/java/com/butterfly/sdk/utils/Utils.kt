@@ -8,7 +8,7 @@ class Utils {
     companion object {
         const val BUTTERFLY_SDK_VERSION: String = "2.0.5"
 
-        var isDebuggable: Boolean? = null
+        private var isDebuggable: Boolean? = null
         var applicationContextWeakReference: WeakReference<Context>? = null
 
         fun isDebuggable(): Boolean {
