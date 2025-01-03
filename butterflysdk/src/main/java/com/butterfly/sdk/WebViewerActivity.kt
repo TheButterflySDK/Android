@@ -47,6 +47,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
     }
 
     companion object {
+        private val eventBus = EventBus()
         private const val SHOULD_DISAPPEAR_ON_BLUR: Boolean = false
 
         fun open(activity: Activity, apiKey: String) {
@@ -128,7 +129,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        token = EventBus.addListener(this, CloseAllEvent::class.java)
+        token = eventBus.addListener(this, CloseAllEvent::class.java)
         layout = RelativeLayout(this)
         layout.addView(webView, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
         setContentView(layout)
@@ -267,7 +268,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 
     private fun beGone() {
         // Close all open activities if they're open
-        EventBus.notify(CloseAllEvent(this))
+        eventBus.notify(CloseAllEvent(this))
 
         finish()
     }
@@ -332,23 +333,23 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         }
 
         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-            var ignoreThis = true
+            val ignoreUrl = true
             val urlString = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 request?.url?.toString() ?: ""
             } else {
                 request?.toString() ?: ""
             }
 
-            if (urlString.isEmpty()) return ignoreThis
+            if (urlString.isEmpty()) return ignoreUrl
 
             navigationRequestsListener.onNavigationRequest(urlString)
 
             if (isWhiteListed(urlString)) {
                 view?.loadUrl(urlString)
-                return ignoreThis
+                return ignoreUrl
             }
 
-            return ignoreThis
+            return ignoreUrl
         }
 
         private fun isWhiteListed(urlString: String): Boolean {
@@ -494,7 +495,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
                 return
             }
 
-            val url: URL = URL(urlString)
+            val url = URL(urlString)
             val looper = Looper.myLooper() ?: return
             val callerHandler = Handler(looper)
             bgThreadHandler.post {
