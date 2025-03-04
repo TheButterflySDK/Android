@@ -36,7 +36,7 @@ import java.util.Locale
 import javax.net.ssl.HttpsURLConnection
 
 class WebViewerActivity: Activity(), EventBus.Listener {
-    class CloseAllEvent(val data: Activity) : EventBus.Event()
+    class AbortEvent(val caller: Activity) : EventBus.Event()
     private object IntentExtraKeys {
         const val URL = "url"
         const val SHOULD_CLEAR_CACHE = "shouldClearCache"
@@ -129,22 +129,22 @@ class WebViewerActivity: Activity(), EventBus.Listener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        token = eventBus.addListener(this, CloseAllEvent::class.java)
+        token = eventBus.addListener(this, AbortEvent::class.java)
         layout = RelativeLayout(this)
         layout.addView(webView, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
         setContentView(layout)
 
-        val closeButtonRelativeLayoutParams = RelativeLayout.LayoutParams(
+        val abortButtonRelativeLayoutParams = RelativeLayout.LayoutParams(
                 35.dpToPx(),
                 35.dpToPx(),
         ).apply {
             addRule(RelativeLayout.ALIGN_PARENT_TOP)
-            addRule(RelativeLayout.ALIGN_PARENT_END) // Use ALIGN_PARENT_RIGHT for older versions
+            addRule(RelativeLayout.ALIGN_PARENT_RIGHT) // Use ALIGN_PARENT_RIGHT for older versions
             marginEnd = 6 // margin right
             topMargin = 16 // margin top
         }
 
-        val closeButton = TextView(this).apply {
+        val abortButton = TextView(this).apply {
             text = "ⓧ"
             textSize = 16f
             setTextColor(Color.BLACK)
@@ -156,7 +156,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
             }
         }
 
-        layout.addView(closeButton, closeButtonRelativeLayoutParams)
+        layout.addView(abortButton, abortButtonRelativeLayoutParams)
 
         val butterflyWebViewClient = ButterflyWebViewClient(object : NavigationRequestsListener {
             override fun onNavigationRequest(urlString: String) {
@@ -173,7 +173,11 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 //                                    SdkLogger.log(TAG, messageFromWebPage)
                                 }
 
-                                "cancel" -> {
+                                "close" -> {
+                                    finish()
+                                }
+
+                                "cancel", "abort" -> {
                                     beGone()
                                 }
 
@@ -268,7 +272,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 
     private fun beGone() {
         // Close all open activities if they're open
-        eventBus.notify(CloseAllEvent(this))
+        eventBus.notify(AbortEvent(this))
 
         finish()
     }
@@ -538,8 +542,8 @@ class WebViewerActivity: Activity(), EventBus.Listener {
     }
 
     override fun onEvent(event: EventBus.Event) {
-        val closeAllEvent = (event as? CloseAllEvent) ?: return
-        if (closeAllEvent.data != this) {
+        val abortEvent = (event as? AbortEvent) ?: return
+        if (abortEvent.caller != this) {
             finish()
         }
     }
