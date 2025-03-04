@@ -173,7 +173,11 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 //                                    SdkLogger.log(TAG, messageFromWebPage)
                                 }
 
-                                "cancel" -> {
+                                "close" -> {
+                                    finish()
+                                }
+
+                                "cancel", "abort" -> {
                                     beGone()
                                 }
 
