@@ -32,6 +32,6 @@ dependencies {
         implementation project(path: ':butterflysdk')
     } else {
         // Make sure you're aiming to the latest version available here: https://jitpack.io/#TheButterflySDK/Android
-        implementation 'com.github.TheButterflySDK:Android:2.1.0'
+        implementation 'com.github.TheButterflySDK:Android:2.1.1'
     }
 }
