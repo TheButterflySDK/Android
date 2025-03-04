@@ -139,7 +139,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
                 35.dpToPx(),
         ).apply {
             addRule(RelativeLayout.ALIGN_PARENT_TOP)
-            addRule(RelativeLayout.ALIGN_PARENT_END) // Use ALIGN_PARENT_RIGHT for older versions
+            addRule(RelativeLayout.ALIGN_PARENT_RIGHT) // Use ALIGN_PARENT_RIGHT for older versions
             marginEnd = 6 // margin right
             topMargin = 16 // margin top
         }
