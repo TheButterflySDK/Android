@@ -6,7 +6,7 @@
 
     <application>
     <activity
-        android:name=".WebViewerActivity"
+        android:name=".Logic.WebViewerActivity"
         android:theme="@style/AppTheme.NoActionBar"
         android:exported="false" />
         <provider
