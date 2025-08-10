@@ -1,11 +1,11 @@
-package com.butterfly.sdk.Logic
+package com.butterfly.sdk.logic
 
 import android.content.Intent
 import android.net.Uri
 import android.webkit.JavascriptInterface
-import com.butterfly.sdk.Logic.WebViewerActivity.Companion.TAG
-import com.butterfly.sdk.Logic.WebViewerActivity.Companion.urlWhiteList
-import com.butterfly.sdk.Logic.WebViewerActivity.IntentExtraKeys
+import com.butterfly.sdk.logic.WebViewerActivity.Companion.TAG
+import com.butterfly.sdk.logic.WebViewerActivity.Companion.urlWhiteList
+import com.butterfly.sdk.logic.WebViewerActivity.IntentExtraKeys
 import com.butterfly.sdk.utils.SdkLogger
 import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject

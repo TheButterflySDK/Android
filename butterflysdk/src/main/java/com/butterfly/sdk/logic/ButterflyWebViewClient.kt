@@ -1,4 +1,4 @@
-package com.butterfly.sdk.Logic
+package com.butterfly.sdk.logic
 
 import android.os.Build
 import android.webkit.WebResourceError
@@ -6,8 +6,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.butterfly.sdk.Logic.WebViewerActivity.Companion.urlWhiteList
-import com.butterfly.sdk.Logic.WebViewerActivity.NavigationRequestsListener
+import com.butterfly.sdk.logic.WebViewerActivity.Companion.urlWhiteList
+import com.butterfly.sdk.logic.WebViewerActivity.NavigationRequestsListener
 
 internal class ButterflyWebViewClient(val navigationRequestsListener: NavigationRequestsListener) : WebViewClient() {
     override fun onLoadResource(view: WebView?, url: String?) {

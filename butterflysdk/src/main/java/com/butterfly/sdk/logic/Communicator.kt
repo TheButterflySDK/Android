@@ -1,9 +1,9 @@
-package com.butterfly.sdk.Logic
+package com.butterfly.sdk.logic
 
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
-import com.butterfly.sdk.Logic.WebViewerActivity.Companion.TAG
+import com.butterfly.sdk.logic.WebViewerActivity.Companion.TAG
 import com.butterfly.sdk.utils.SdkLogger
 import org.json.JSONObject
 import java.io.IOException

@@ -1,4 +1,4 @@
-package com.butterfly.sdk.Logic
+package com.butterfly.sdk.logic
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -38,7 +38,64 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         private val eventBus = EventBus()
         private const val SHOULD_DISAPPEAR_ON_BLUR: Boolean = false
 
+        val TAG: String get() {
+            return WebViewerActivity::class.java.simpleName
+        }
+        var languageCodeToOverride: String? = null
+        var countryCodeToOverride: String? = null
+        var customColorHexaString: String? = null // May be: "0xFF91BA48", "FF91BA48", "91BA48"
+
+        internal val urlWhiteList: HashSet<String> = HashSet()
+
+        // Reporter Handling
         fun open(activity: Activity, apiKey: String) {
+            open(activity, apiKey, null)
+        }
+
+        // Reporter Handling via deep link
+        fun handleIncomingURL(activity: Activity, uri: Uri, apiKey: String) {
+            try {
+                val url = URL(uri.scheme, uri.host, uri.path)
+                handleURL(activity, url, apiKey)
+            } catch (e: MalformedURLException) {
+                // Ignore
+                return
+            }
+        }
+
+        private fun handleURL(activity: Activity, url: URL, apiKey: String) {
+            val urlParams: MutableMap<String, String> = extractParamsFromURL(url)
+
+            if (urlParams.isEmpty()) {
+                return
+            }
+
+//            ButterflyHostController.whenTopViewControllerIsReady { success ->
+//                if (!success) return@whenTopViewControllerIsReady
+//
+//                BFBrowser.fetchButterflyParamsFromURL(
+//                    urlParams,
+//                    appKey = apiKey,
+//                    sdkVersion = Utils.BUTTERFLY_SDK_VERSION
+//                ) { butterflyParams ->
+//
+//                    val extraParams = extractURLExtraParamsFromDictionary(butterflyParams)
+//
+//                    if (extraParams.isEmpty()) {
+//                        SdkLogger.error(
+//                            TAG,
+//                            "No need to handle deep link params. Aborting URL handling..."
+//                        )
+//                        return@fetchButterflyParamsFromURL
+//                    }
+//
+//                    open(activity, apiKey, extraParams)
+//                }
+//            }
+        }
+
+        // Shared logic
+        private fun open(activity: Activity, apiKey: String, extraParams: String?) {
             Utils.saveContext(activity)
             if (apiKey.isEmpty()) return
 
@@ -73,7 +130,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
                 // Ignore
             }
 
-            val urlString =
+            var urlString =
                 baseUrl +
                         "?language=$languageCode" +
                         "&api_key=$apiKey" +
@@ -82,37 +139,52 @@ class WebViewerActivity: Activity(), EventBus.Listener {
                         "&colorize=${customColorHexa}" +
                         "&is-embedded-via-mobile-sdk=1"
 
+            extraParams?.takeIf { it.isNotEmpty() }?.let {
+                urlString += "&$it"
+            }
+
             activity.startActivity(
                 Intent(activity, WebViewerActivity::class.java)
-                        .putExtra(IntentExtraKeys.URL, urlString)
-                        .putExtra(IntentExtraKeys.SHOULD_CLEAR_CACHE, shouldClearCache)
+                    .putExtra(IntentExtraKeys.URL, urlString)
+                    .putExtra(IntentExtraKeys.SHOULD_CLEAR_CACHE, shouldClearCache)
             )
         }
 
-        fun open(activity: Activity, uri: Uri, apiKey: String) {
-            Utils.saveContext(activity)
-            if (apiKey.isEmpty()) return
+        private fun extractParamsFromURL(url: URL): MutableMap<String, String> {
+            val params = mutableMapOf<String, String>()
 
-            try {
-                val url = URL(uri.scheme, uri.host, uri.path)
-                // extract url params
-                // throttling
-                // fetchButterflyParamsFromURL
-                // extractURLExtraParamsFromDictionary
-                // openReporterUsingKey
-            } catch (e: MalformedURLException) {
-                return
+            val urlString = url.toString()
+            if (urlString.isEmpty()) {
+                return params
             }
+
+            val components = Uri.parse(urlString)
+
+            // Uri.getQueryParameterNames() is available on API 11+
+            components.queryParameterNames.forEach { name ->
+                val value = components.getQueryParameter(name)
+                if (name != null && value != null) {
+                    params[name] = value
+                }
+            }
+
+            return params
         }
 
-        val TAG: String get() {
-            return WebViewerActivity::class.java.simpleName
-        }
-        var languageCodeToOverride: String? = null
-        var countryCodeToOverride: String? = null
-        var customColorHexaString: String? = null // May be: "0xFF91BA48", "FF91BA48", "91BA48"
+        private fun extractURLExtraParamsFromDictionary(resultParams: Map<String, String>?): String {
+            if (resultParams.isNullOrEmpty()) {
+                return ""
+            }
 
-        internal val urlWhiteList: HashSet<String> = HashSet()
+            val queryItems = resultParams.map { (key, value) ->
+                val encodedKey = Uri.encode(key)
+                val encodedValue = Uri.encode(value)
+                "$encodedKey=$encodedValue"
+            }
+
+            return queryItems.joinToString("&")
+        }
+
     }
 
     private var token: EventBus.ListenerToken? = null
@@ -341,4 +413,5 @@ class WebViewerActivity: Activity(), EventBus.Listener {
     private fun View.removeSelf() {
         (parent as? ViewGroup)?.removeView(this)
     }
+
 }
