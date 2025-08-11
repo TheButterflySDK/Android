@@ -20,7 +20,6 @@ import com.butterfly.sdk.utils.SdkLogger
 import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
 import java.net.MalformedURLException
-import java.net.URL
 import java.util.Locale
 
 class WebViewerActivity: Activity(), EventBus.Listener {
@@ -54,23 +53,11 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 
         // Reporter Handling via deep link
         fun handleIncomingURL(activity: Activity, uri: Uri, apiKey: String) {
-            try {
-                handleURL(activity, uri, apiKey)
-            } catch (e: MalformedURLException) {
-                // Ignore
-                return
-            }
-        }
-
-        private fun handleURL(activity: Activity, uri: Uri, apiKey: String) {
             val urlParams: MutableMap<String, String> = extractParamsFromUri(uri)
 
             if (urlParams.isEmpty()) {
                 return
             }
-
-//            ButterflyHostController.whenTopViewControllerIsReady { success ->
-//                if (!success) return@whenTopViewControllerIsReady
 
             Communicator.fetchButterflyParamsFromURL(
                 urlParams,
@@ -87,8 +74,6 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 
                 open(activity, apiKey, extraParams)
             }
-//            }
-//
         }
 
         // Shared logic
