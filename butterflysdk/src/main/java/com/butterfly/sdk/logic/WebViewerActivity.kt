@@ -55,16 +55,15 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         // Reporter Handling via deep link
         fun handleIncomingURL(activity: Activity, uri: Uri, apiKey: String) {
             try {
-                val url = URL(uri.scheme, uri.host, uri.path)
-                handleURL(activity, url, apiKey)
+                handleURL(activity, uri, apiKey)
             } catch (e: MalformedURLException) {
                 // Ignore
                 return
             }
         }
 
-        private fun handleURL(activity: Activity, url: URL, apiKey: String) {
-            val urlParams: MutableMap<String, String> = extractParamsFromURL(url)
+        private fun handleURL(activity: Activity, uri: Uri, apiKey: String) {
+            val urlParams: MutableMap<String, String> = extractParamsFromUri(uri)
 
             if (urlParams.isEmpty()) {
                 return
@@ -72,26 +71,24 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 
 //            ButterflyHostController.whenTopViewControllerIsReady { success ->
 //                if (!success) return@whenTopViewControllerIsReady
-//
-//                BFBrowser.fetchButterflyParamsFromURL(
-//                    urlParams,
-//                    appKey = apiKey,
-//                    sdkVersion = Utils.BUTTERFLY_SDK_VERSION
-//                ) { butterflyParams ->
-//
-//                    val extraParams = extractURLExtraParamsFromDictionary(butterflyParams)
-//
-//                    if (extraParams.isEmpty()) {
-//                        SdkLogger.error(
-//                            TAG,
-//                            "No need to handle deep link params. Aborting URL handling..."
-//                        )
-//                        return@fetchButterflyParamsFromURL
-//                    }
-//
-//                    open(activity, apiKey, extraParams)
-//                }
+
+            Communicator.fetchButterflyParamsFromURL(
+                urlParams,
+                appKey = apiKey,
+                sdkVersion = Utils.BUTTERFLY_SDK_VERSION
+            ) { butterflyParams ->
+
+                val extraParams = extractURLExtraParamsFromDictionary(butterflyParams)
+
+                if (extraParams.isEmpty()) {
+                    SdkLogger.error(TAG, "No need to handle deep link params. Aborting URL handling...")
+                    return@fetchButterflyParamsFromURL
+                }
+
+                open(activity, apiKey, extraParams)
+            }
 //            }
+//
         }
 
         // Shared logic
@@ -150,20 +147,17 @@ class WebViewerActivity: Activity(), EventBus.Listener {
             )
         }
 
-        private fun extractParamsFromURL(url: URL): MutableMap<String, String> {
+        private fun extractParamsFromUri(uri: Uri): MutableMap<String, String> {
             val params = mutableMapOf<String, String>()
 
-            val urlString = url.toString()
-            if (urlString.isEmpty()) {
+            if (uri.toString().isEmpty()) {
                 return params
             }
 
-            val components = Uri.parse(urlString)
-
-            // Uri.getQueryParameterNames() is available on API 11+
-            components.queryParameterNames.forEach { name ->
-                val value = components.getQueryParameter(name)
-                if (name != null && value != null) {
+            // Works for both http(s):// and custom-scheme URIs like butterfly://
+            for (name in uri.queryParameterNames) {
+                val value = uri.getQueryParameter(name)
+                if (!name.isNullOrEmpty() && value != null) {
                     params[name] = value
                 }
             }

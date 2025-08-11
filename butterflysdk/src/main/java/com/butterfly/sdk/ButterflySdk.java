@@ -37,7 +37,7 @@ public class ButterflySdk {
     }
 
     public static void handleIncomingIntent(Activity activity, Intent intent, String key) {
-        openURL(activity, intent, key);
+        handleIncomingURL(activity, intent, key);
     }
 
     private static void openDialog(Activity activity, String apiKey) {
@@ -46,7 +46,7 @@ public class ButterflySdk {
         WebViewerActivity.Companion.open(activity, apiKey);
     }
 
-    private static void openURL(Activity activity, Intent intent, String apiKey) {
+    private static void handleIncomingURL(Activity activity, Intent intent, String apiKey) {
         if (apiKey == null || intent.getData() == null || apiKey.isEmpty()) return;
 
         WebViewerActivity.Companion.handleIncomingURL(activity, intent.getData(), apiKey);

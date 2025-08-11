@@ -51,6 +51,72 @@ internal class Communicator(private val urlString: String, private val requestBo
                 }
             }
         }
+
+        fun fetchButterflyParamsFromURL(
+            urlParams: MutableMap<String, String>?,
+            appKey: String,
+            sdkVersion: String,
+            completion: (Map<String, String>?) -> Unit
+        ) {
+            val jsonBody = mapOf(
+                "apiKey" to appKey,
+                "sdkVersion" to sdkVersion,
+                "platform" to "android",
+                "urlParams" to urlParams
+            )
+
+            val baseURL = "https://us-central1-butterfly-button.cloudfunctions.net/convertToUrlParams"
+            val url = URL(baseURL)
+            val looper = Looper.myLooper() ?: return
+            val callerHandler = Handler(looper)
+
+            bgThreadHandler.post {
+                try {
+                    var resultParams: Map<String, String>? = null
+
+                    val connection = url.openConnection() as HttpsURLConnection
+                    connection.requestMethod = "POST"
+                    connection.setRequestProperty("Content-Type", "application/json")
+                    connection.setRequestProperty("Accept", "application/json")
+                    connection.doInput = true
+                    connection.doOutput = true
+
+                    // Send JSON body
+                    OutputStreamWriter(connection.outputStream).use { writer ->
+                        val jsonString = JSONObject(jsonBody).toString()
+                        writer.write(jsonString)
+                        writer.flush()
+                    }
+
+                    if (connection.responseCode == HttpsURLConnection.HTTP_OK) {
+                        val responseString = connection.inputStream.bufferedReader().use { it.readText() }
+                        val jsonResponse = JSONObject(responseString)
+
+                        if (jsonResponse.has("result") && jsonResponse.get("result") is JSONObject) {
+                            val resultJson = jsonResponse.getJSONObject("result")
+                            resultParams = mutableMapOf<String, String>().apply {
+                                for (key in resultJson.keys()) {
+                                    put(key, resultJson.getString(key))
+                                }
+                            }
+                        } else {
+                            SdkLogger.error(TAG, "Invalid or missing 'result' key in JSON")
+                        }
+                    } else {
+                        SdkLogger.error(TAG, "HTTP error code: ${connection.responseCode}")
+                    }
+
+                    callerHandler.post {
+                        completion(resultParams)
+                    }
+                } catch (e: Throwable) {
+                    SdkLogger.error(TAG, "Exception: ${e.message}")
+                    callerHandler.post {
+                        completion(null)
+                    }
+                }
+            }
+        }
     }
 
     fun call(callback: (String) -> Unit) {
