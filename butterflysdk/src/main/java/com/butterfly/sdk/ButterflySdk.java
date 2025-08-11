@@ -49,6 +49,6 @@ public class ButterflySdk {
     private static void handleIncomingURL(Activity activity, Intent intent, String apiKey) {
         if (apiKey == null || intent.getData() == null || apiKey.isEmpty()) return;
 
-        WebViewerActivity.Companion.handleIncomingURL(activity, intent.getData(), apiKey);
+        WebViewerActivity.Companion.handleIncomingURI(activity, intent.getData(), apiKey);
     }
 }

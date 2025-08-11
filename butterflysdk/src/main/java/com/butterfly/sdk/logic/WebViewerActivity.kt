@@ -19,7 +19,6 @@ import com.butterfly.sdk.utils.EventBus
 import com.butterfly.sdk.utils.SdkLogger
 import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
-import java.net.MalformedURLException
 import java.util.Locale
 
 class WebViewerActivity: Activity(), EventBus.Listener {
@@ -52,7 +51,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         }
 
         // Reporter Handling via deep link
-        fun handleIncomingURL(activity: Activity, uri: Uri, apiKey: String) {
+        fun handleIncomingURI(activity: Activity, uri: Uri, apiKey: String) {
             val urlParams: MutableMap<String, String> = extractParamsFromUri(uri)
 
             if (urlParams.isEmpty()) {
@@ -69,10 +68,9 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 
                 if (extraParams.isEmpty()) {
                     SdkLogger.error(TAG, "No need to handle deep link params. Aborting URL handling...")
-                    return@fetchButterflyParamsFromURL
+                } else {
+                    open(activity, apiKey, extraParams)
                 }
-
-                open(activity, apiKey, extraParams)
             }
         }
 
