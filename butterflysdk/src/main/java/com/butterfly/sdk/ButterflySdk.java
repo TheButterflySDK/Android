@@ -1,6 +1,9 @@
 package com.butterfly.sdk;
 
 import android.app.Activity;
+import android.content.Intent;
+
+import com.butterfly.sdk.logic.WebViewerActivity;
 
 public class ButterflySdk {
     /**
@@ -33,9 +36,19 @@ public class ButterflySdk {
         openDialog(activity, key);
     }
 
+    public static void handleIncomingIntent(Activity activity, Intent intent, String key) {
+        handleIncomingURL(activity, intent, key);
+    }
+
     private static void openDialog(Activity activity, String apiKey) {
         if (apiKey == null || apiKey.isEmpty()) return;
 
         WebViewerActivity.Companion.open(activity, apiKey);
+    }
+
+    private static void handleIncomingURL(Activity activity, Intent intent, String apiKey) {
+        if (apiKey == null || intent.getData() == null || apiKey.isEmpty()) return;
+
+        WebViewerActivity.Companion.handleIncomingURI(activity, intent.getData(), apiKey);
     }
 }
