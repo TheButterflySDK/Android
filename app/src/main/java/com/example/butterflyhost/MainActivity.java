@@ -17,15 +17,16 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Window window = getWindow();
 
         // Optional: control icon colors
         WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
 
-        WindowCompat.setDecorFitsSystemWindows(window, false);
         window.setStatusBarColor(Color.TRANSPARENT);
         window.setNavigationBarColor(Color.TRANSPARENT);
 
@@ -42,13 +43,11 @@ public class MainActivity extends AppCompatActivity {
         controller.setAppearanceLightNavigationBars(useDarkIcons); // requires API 26+
         
         // Handle deep link if app was launched from a URL (cold start)
-        ButterflySdk.handleIncomingIntent(this, getIntent(), API_KEY);
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         // Handle deep link if app was already running (warm start)
-        ButterflySdk.handleIncomingIntent(this, intent, API_KEY);
     }
 }
