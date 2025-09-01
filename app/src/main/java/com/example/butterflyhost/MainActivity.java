@@ -2,6 +2,7 @@ package com.example.butterflyhost;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.ImageButton;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,6 +12,7 @@ import com.butterfly.sdk.ButterflySdk;
 public class MainActivity extends AppCompatActivity {
 
     private static final String API_KEY = "your-api-key";
+    private static final Uri MOCKED_DEEPLINK_URI = Uri.parse("https://www.dan.co.il/?your=safezone");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
 
         button.setOnClickListener(v ->
                 ButterflySdk.openReporter(activity, API_KEY)
+//                ButterflySdk.handleIncomingIntent(activity, MOCKED_DEEPLINK_URI, API_KEY)
         );
 
         // Handle deep link if app was launched from a URL (cold start)

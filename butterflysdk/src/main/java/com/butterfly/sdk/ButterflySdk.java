@@ -2,6 +2,7 @@ package com.butterfly.sdk;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 
 import com.butterfly.sdk.logic.WebViewerActivity;
 
@@ -36,8 +37,12 @@ public class ButterflySdk {
         openDialog(activity, key);
     }
 
+    public static void handleIncomingIntent(Activity activity, Uri uri, String key) {
+        handleIncomingURL(activity, uri, key);
+    }
+
     public static void handleIncomingIntent(Activity activity, Intent intent, String key) {
-        handleIncomingURL(activity, intent, key);
+        handleIncomingURL(activity, intent.getData(), key);
     }
 
     private static void openDialog(Activity activity, String apiKey) {
@@ -46,9 +51,9 @@ public class ButterflySdk {
         WebViewerActivity.Companion.open(activity, apiKey);
     }
 
-    private static void handleIncomingURL(Activity activity, Intent intent, String apiKey) {
-        if (apiKey == null || intent.getData() == null || apiKey.isEmpty()) return;
+    private static void handleIncomingURL(Activity activity, Uri uri, String apiKey) {
+        if (apiKey == null || uri == null || apiKey.isEmpty()) return;
 
-        WebViewerActivity.Companion.handleIncomingURI(activity, intent.getData(), apiKey);
+        WebViewerActivity.Companion.handleIncomingURI(activity, uri, apiKey);
     }
 }
