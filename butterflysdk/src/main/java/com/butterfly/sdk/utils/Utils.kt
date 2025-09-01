@@ -26,6 +26,8 @@ class Utils {
         }
 
         fun saveContext(context: Context) {
+            if (applicationContextWeakReference != null) return
+
             applicationContextWeakReference = WeakReference(context.applicationContext)
         }
     }

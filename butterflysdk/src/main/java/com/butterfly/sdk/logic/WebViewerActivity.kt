@@ -21,7 +21,7 @@ import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
 import java.util.Locale
 
-internal class WebViewerActivity: Activity(), EventBus.Listener {
+class WebViewerActivity: Activity(), EventBus.Listener {
     class AbortEvent(val caller: Activity) : EventBus.Event()
     internal object IntentExtraKeys {
         const val URL = "url"
@@ -32,9 +32,10 @@ internal class WebViewerActivity: Activity(), EventBus.Listener {
         fun onNavigationRequest(urlString: String)
     }
 
-    companion object {
+    internal companion object {
         private val eventBus = EventBus()
         private const val SHOULD_DISAPPEAR_ON_BLUR: Boolean = false
+        private var webViewsCount = 0
 
         val TAG: String get() {
             return WebViewerActivity::class.java.simpleName
@@ -44,7 +45,7 @@ internal class WebViewerActivity: Activity(), EventBus.Listener {
         var customColorHexaString: String? = null // May be: "0xFF91BA48", "FF91BA48", "91BA48"
 
         internal val urlWhiteList: HashSet<String> = HashSet()
-
+        private val cachedButterflyParams: HashMap<String, Map<String, String>> = hashMapOf()
         // Reporter Handling
         fun open(activity: Activity, apiKey: String) {
             open(activity, apiKey, null)
@@ -83,10 +84,10 @@ internal class WebViewerActivity: Activity(), EventBus.Listener {
             }
         }
 
-        // Shared logic
         private fun open(activity: Activity, apiKey: String, extraParams: String?) {
             Utils.saveContext(activity)
             if (apiKey.isEmpty()) return
+            if (webViewsCount != 0) return
 
             var languageCode = Locale.getDefault().language
 
@@ -107,8 +108,10 @@ internal class WebViewerActivity: Activity(), EventBus.Listener {
 
             var baseUrl = "https://butterfly-button.web.app/reporter/"
             var shouldClearCache = false
+            var applicationId = ""
             try {
                 val appInfo = activity.packageManager.getApplicationInfo(activity.packageName, PackageManager.GET_META_DATA)
+                applicationId = appInfo.packageName
                 appInfo.metaData?.getString("com.butterfly.sdk.BASE_URL")?.let { customBaseUrl ->
                     if (baseUrl != customBaseUrl) {
                         baseUrl = customBaseUrl
@@ -130,6 +133,10 @@ internal class WebViewerActivity: Activity(), EventBus.Listener {
 
             extraParams?.takeIf { it.isNotEmpty() }?.let {
                 urlString += "&$it"
+            }
+
+            applicationId.trim().takeIf { it.isNotEmpty() }?.let {
+                urlString += "&mobile-app-id=$it"
             }
 
             activity.startActivity(
@@ -157,7 +164,7 @@ internal class WebViewerActivity: Activity(), EventBus.Listener {
             return params
         }
 
-        private fun convertMapToQueryStringParams(resultParams: Map<String, String>?): String {
+        fun convertMapToQueryStringParams(resultParams: Map<String, String>?): String {
             val params: Map<String, String> = resultParams ?: return ""
             if (params.isEmpty()) return ""
 
@@ -191,6 +198,7 @@ internal class WebViewerActivity: Activity(), EventBus.Listener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        webViewsCount++
         token = eventBus.addListener(this, AbortEvent::class.java)
         layout = RelativeLayout(this)
         layout.addView(webView, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
@@ -351,8 +359,15 @@ internal class WebViewerActivity: Activity(), EventBus.Listener {
             // leave a blank screen because in any case it will exit by itself (so eventually it will hide the reporter from the "recent apps" view).
             webView.removeSelf()
         }
+        webView.alpha = 0f
 
         super.onPause()
+    }
+
+    override fun onResume() {
+        webView.alpha = 1f
+
+        super.onResume()
     }
 
     override fun onStop() {
@@ -368,6 +383,8 @@ internal class WebViewerActivity: Activity(), EventBus.Listener {
 
     override fun onDestroy() {
         token?.remove()
+        webViewsCount--
+
         super.onDestroy()
     }
 
