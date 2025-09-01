@@ -12,7 +12,7 @@ import com.butterfly.sdk.ButterflySdk;
 public class MainActivity extends AppCompatActivity {
 
     private static final String API_KEY = "your-api-key";
-    private static final Uri MOCKED_DEEPLINK_URI = Uri.parse("https://www.dan.co.il/?your=safezone");
+    private static final Uri MOCKED_DEEPLINK_URI = Uri.parse("your-deeplink-url");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
