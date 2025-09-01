@@ -7,7 +7,9 @@
     <application>
     <activity
         android:name=".logic.WebViewerActivity"
-        android:theme="@style/AppTheme.NoActionBar"
+        android:theme="@style/Theme.BfWebViewer"
+        android:windowSoftInputMode="adjustResize"
+        android:configChanges="orientation|screenSize"
         android:exported="false" />
         <provider
             android:name=".BFContextProvider"

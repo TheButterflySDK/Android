@@ -3,18 +3,22 @@ package com.butterfly.sdk.logic
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.webkit.WebView
 import android.widget.Button
 import android.widget.RelativeLayout
 import android.widget.TextView
+import com.butterfly.sdk.R
 import com.butterfly.sdk.utils.EventBus
 import com.butterfly.sdk.utils.SdkLogger
 import com.butterfly.sdk.utils.Utils
@@ -203,6 +207,16 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         layout = RelativeLayout(this)
         layout.addView(webView, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
         setContentView(layout)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            webView.setOnApplyWindowInsetsListener { v, insets ->
+                val ime = insets.getInsets(WindowInsets.Type.ime())
+                val bars = insets.getInsets(WindowInsets.Type.systemBars())
+                val bottom = maxOf(ime.bottom, bars.bottom)
+                v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, bottom + 500)
+                insets
+            }
+        }
 
         val abortButtonRelativeLayoutParams = RelativeLayout.LayoutParams(
                 35.dpToPx(),
