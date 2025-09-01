@@ -201,6 +201,10 @@ class WebViewerActivity: Activity(), EventBus.Listener {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setTheme(R.style.Theme_BfWebViewer)
+        // Lock orientation to portrait
+        @SuppressLint("SourceLockedOrientationActivity") // Actually I do want to lock it :)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
         webViewsCount++
         token = eventBus.addListener(this, AbortEvent::class.java)
