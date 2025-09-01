@@ -35,8 +35,15 @@ public class ButterflySdk {
         WebViewerActivity.Companion.setCustomColorHexaString(customColorHexa);
     }
 
+    /// Opens the Butterfly screen.
+    public static void open(Activity activity, String apiKey) {
+        openButterflyScreen(activity, apiKey);
+    }
+
+    @Deprecated()
+    /// Deprecated: Use `open(Activity activity, String apiKey)` instead.
     public static void openReporter(Activity activity, String key) {
-        openDialog(activity, key);
+        openButterflyScreen(activity, key);
     }
 
     public static void handleIncomingIntent(Activity activity, Intent intent, String apiKey) {
@@ -62,7 +69,7 @@ public class ButterflySdk {
         WebViewerActivity.Companion.handleIncomingURI(activity, uri, apiKey);
     }
 
-    private static void openDialog(Activity activity, String apiKey) {
+    private static void openButterflyScreen(Activity activity, String apiKey) {
         if (apiKey == null || activity == null || apiKey.isEmpty()) return;
 
         WebViewerActivity.Companion.open(activity, apiKey);
