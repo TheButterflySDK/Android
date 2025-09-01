@@ -29,6 +29,8 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation "androidx.core:core-ktx:1.13.1"
+
     if (shouldUseLocal) {
         implementation project(path: ':butterflysdk')
     } else {

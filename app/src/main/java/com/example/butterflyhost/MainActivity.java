@@ -2,11 +2,14 @@ package com.example.butterflyhost;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.Window;
 import android.widget.ImageButton;
 import androidx.appcompat.app.AppCompatActivity;
-
+import androidx.core.view.WindowCompat;
 import com.butterfly.sdk.ButterflySdk;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -16,6 +19,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Window window = getWindow();
+
+        // Optional: control icon colors
+        WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
         ImageButton button = findViewById(R.id.generate_button);
 
         final Activity activity = this;
@@ -24,6 +37,10 @@ public class MainActivity extends AppCompatActivity {
                 ButterflySdk.openReporter(activity, API_KEY)
         );
 
+        boolean useDarkIcons = true; // dark icons = light status bar background
+        controller.setAppearanceLightStatusBars(useDarkIcons);     // requires API 23+
+        controller.setAppearanceLightNavigationBars(useDarkIcons); // requires API 26+
+        
         // Handle deep link if app was launched from a URL (cold start)
         ButterflySdk.handleIncomingIntent(this, getIntent(), API_KEY);
     }

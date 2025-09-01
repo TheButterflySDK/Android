@@ -13,6 +13,7 @@ version = ext.TheButterflySdkVersion
 
 android {
     compileSdkVersion 34
+    namespace = 'com.butterfly.sdk'
 
     defaultConfig {
         minSdkVersion 19
