@@ -2,10 +2,13 @@ package com.butterfly.sdk;
 
 import android.app.Activity;
 import android.content.Intent;
-
+import android.net.Uri;
 import com.butterfly.sdk.logic.WebViewerActivity;
+import com.butterfly.sdk.utils.SdkLogger;
 
 public class ButterflySdk {
+    private static final String TAG = "ButterflySdk";
+
     /**
      * Sets the main user interface's language, no matter what's the language of the user's device.
      * @param interfaceLanguage An enum represents the language, currently accepting only Hebrew or English.
@@ -36,19 +39,32 @@ public class ButterflySdk {
         openDialog(activity, key);
     }
 
-    public static void handleIncomingIntent(Activity activity, Intent intent, String key) {
-        handleIncomingURL(activity, intent, key);
+    public static void handleIncomingIntent(Activity activity, Intent intent, String apiKey) {
+        if (apiKey == null || intent == null || intent.getData() == null || apiKey.isEmpty()) return;
+
+        handleDeepLink(activity, intent.getData(), apiKey);
+    }
+
+    public static void handleDeepLink(Activity activity, String urlString, String apiKey) {
+        Uri uri = null;
+        try {
+            uri = Uri.parse(urlString);
+        } catch (Exception e) {
+            SdkLogger.Companion.error(TAG, e);
+        }
+
+        handleDeepLink(activity, uri, apiKey);
+    }
+
+    public static void handleDeepLink(Activity activity, Uri uri, String apiKey) {
+        if (apiKey == null || uri == null || activity == null || uri.toString().isEmpty() || apiKey.isEmpty()) return;
+
+        WebViewerActivity.Companion.handleIncomingURI(activity, uri, apiKey);
     }
 
     private static void openDialog(Activity activity, String apiKey) {
-        if (apiKey == null || apiKey.isEmpty()) return;
+        if (apiKey == null || activity == null || apiKey.isEmpty()) return;
 
         WebViewerActivity.Companion.open(activity, apiKey);
-    }
-
-    private static void handleIncomingURL(Activity activity, Intent intent, String apiKey) {
-        if (apiKey == null || intent.getData() == null || apiKey.isEmpty()) return;
-
-        WebViewerActivity.Companion.handleIncomingURI(activity, intent.getData(), apiKey);
     }
 }

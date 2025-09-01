@@ -11,16 +11,18 @@ class Utils {
         private var isDebuggable: Boolean? = null
         var applicationContextWeakReference: WeakReference<Context>? = null
 
+        /**
+         * Lazy initialization of the underlying variable `isDebuggable`.
+         *
+         * @return `true` if the application is debuggable and if there's an application context available, otherwise `false`.
+         */
         fun isDebuggable(): Boolean {
-            isDebuggable?.let {
-                return it
-            } ?: run {
-                val applicationContext = applicationContextWeakReference?.get() ?: return false
+            if (isDebuggable != null) return isDebuggable ?: false
 
-                isDebuggable = 0 != applicationContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE
+            val applicationContext = applicationContextWeakReference?.get() ?: return false
+            isDebuggable = 0 != applicationContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE
 
-                return isDebuggable ?: false
-            }
+            return isDebuggable ?: false
         }
 
         fun saveContext(context: Context) {

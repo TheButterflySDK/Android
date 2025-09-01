@@ -14,7 +14,6 @@ import javax.net.ssl.HttpsURLConnection
 
 internal class Communicator(private val urlString: String, private val requestBody: JSONObject? = null, private val headers: Map<String, String> = mapOf()) {
     companion object {
-
         private val bgThreadHandler: Handler by lazy {
             val handlerThread = HandlerThread("BFCommunicator Thread")
             handlerThread.start()
@@ -56,7 +55,7 @@ internal class Communicator(private val urlString: String, private val requestBo
             urlParams: MutableMap<String, String>?,
             appKey: String,
             sdkVersion: String,
-            completion: (Map<String, String>?) -> Unit
+            callback: (Map<String, String>?) -> Unit
         ) {
             val jsonBody = mapOf(
                 "apiKey" to appKey,
@@ -71,8 +70,8 @@ internal class Communicator(private val urlString: String, private val requestBo
             val callerHandler = Handler(looper)
 
             bgThreadHandler.post {
+                var resultParams: Map<String, String>? = null
                 try {
-                    var resultParams: Map<String, String>? = null
 
                     val connection = url.openConnection() as HttpsURLConnection
                     connection.requestMethod = "POST"
@@ -105,15 +104,12 @@ internal class Communicator(private val urlString: String, private val requestBo
                     } else {
                         SdkLogger.error(TAG, "HTTP error code: ${connection.responseCode}")
                     }
-
-                    callerHandler.post {
-                        completion(resultParams)
-                    }
                 } catch (e: Throwable) {
                     SdkLogger.error(TAG, "Exception: ${e.message}")
-                    callerHandler.post {
-                        completion(null)
-                    }
+                }
+
+                callerHandler.post {
+                    callback(resultParams)
                 }
             }
         }

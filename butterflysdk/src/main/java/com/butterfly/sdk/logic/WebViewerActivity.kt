@@ -21,7 +21,7 @@ import com.butterfly.sdk.utils.Utils
 import org.json.JSONObject
 import java.util.Locale
 
-class WebViewerActivity: Activity(), EventBus.Listener {
+internal class WebViewerActivity: Activity(), EventBus.Listener {
     class AbortEvent(val caller: Activity) : EventBus.Event()
     internal object IntentExtraKeys {
         const val URL = "url"
@@ -53,23 +53,32 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         // Reporter Handling via deep link
         fun handleIncomingURI(activity: Activity, uri: Uri, apiKey: String) {
             val urlParams: MutableMap<String, String> = extractParamsFromUri(uri)
+            if (urlParams.isEmpty()) return
 
-            if (urlParams.isEmpty()) {
-                return
-            }
+            val cachedKeys = urlParams.keys.sorted().joinToString(",")
 
-            Communicator.fetchButterflyParamsFromURL(
-                urlParams,
-                appKey = apiKey,
-                sdkVersion = Utils.BUTTERFLY_SDK_VERSION
-            ) { butterflyParams ->
-
-                val extraParams = extractURLExtraParamsFromDictionary(butterflyParams)
+            fun handleResponse(backendParams: Map<String, String>) {
+                val extraParams = convertMapToQueryStringParams(backendParams)
 
                 if (extraParams.isEmpty()) {
-                    SdkLogger.error(TAG, "No need to handle deep link params. Aborting URL handling...")
+                    SdkLogger.log(TAG, "No need to handle deep link params. Aborting URL handling...")
                 } else {
                     open(activity, apiKey, extraParams)
+                }
+            }
+
+            cachedButterflyParams[cachedKeys]?.let { cachedBackendParams ->
+                SdkLogger.log(TAG, "Using cached deep link params for keys: $cachedKeys")
+                handleResponse(cachedBackendParams)
+            } ?: run {
+                Communicator.fetchButterflyParamsFromURL(
+                    urlParams,
+                    appKey = apiKey,
+                    sdkVersion = Utils.BUTTERFLY_SDK_VERSION
+                ) { butterflyParams ->
+                    val backendParams = butterflyParams ?: return@fetchButterflyParamsFromURL
+                    cachedButterflyParams[cachedKeys] = backendParams
+                    handleResponse(backendParams)
                 }
             }
         }
@@ -148,20 +157,20 @@ class WebViewerActivity: Activity(), EventBus.Listener {
             return params
         }
 
-        private fun extractURLExtraParamsFromDictionary(resultParams: Map<String, String>?): String {
-            if (resultParams.isNullOrEmpty()) {
-                return ""
-            }
+        private fun convertMapToQueryStringParams(resultParams: Map<String, String>?): String {
+            val params: Map<String, String> = resultParams ?: return ""
+            if (params.isEmpty()) return ""
 
-            val queryItems = resultParams.map { (key, value) ->
+            val queryItems = params.map { (key, value) ->
                 val encodedKey = Uri.encode(key)
                 val encodedValue = Uri.encode(value)
                 "$encodedKey=$encodedValue"
             }
 
+            if (queryItems.isEmpty()) return ""
+
             return queryItems.joinToString("&")
         }
-
     }
 
     private var token: EventBus.ListenerToken? = null

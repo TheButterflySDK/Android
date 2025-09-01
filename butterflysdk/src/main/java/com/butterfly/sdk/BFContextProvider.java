@@ -5,9 +5,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
-
 import com.butterfly.sdk.utils.Utils;
-
 import java.lang.ref.WeakReference;
 
 public class BFContextProvider extends ContentProvider {
@@ -21,7 +19,11 @@ public class BFContextProvider extends ContentProvider {
 
     @Override
     public boolean onCreate() {
-        Utils.Companion.saveContext(getContext().getApplicationContext());
+        Context context = getContext();
+
+        if (context != null) {
+            Utils.Companion.saveContext(context.getApplicationContext());
+        }
 
         return false;
     }
