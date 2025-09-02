@@ -10,6 +10,9 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -39,17 +42,24 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 
     internal companion object {
         private val eventBus = EventBus()
+        const val TAG: String= "WebViewerActivity"
         private const val SHOULD_DISAPPEAR_ON_BLUR: Boolean = false
-        private var webViewsCount = 0
+        private val openedWebViews = mutableSetOf<String>()
         var languageCodeToOverride: String? = null
         var countryCodeToOverride: String? = null
         var customColorHexaString: String? = null // May be: "0xFF91BA48", "FF91BA48", "91BA48"
+        private val mainThreadHandler: Handler by lazy { Handler(Looper.getMainLooper()) }
+        private val pendingKeysRequest = mutableSetOf<String>()
+        private val bgThreadHandler: Handler by lazy {
+            val handlerThread = HandlerThread("WebViewerActivity-BG-Thread")
+            handlerThread.start()
+            val handler = Handler(handlerThread.looper)
 
-        val TAG: String get() {
-            return WebViewerActivity::class.java.simpleName
+            handler
         }
 
         internal val urlWhiteList: HashSet<String> = HashSet()
+        // NOTE: This map should be accessed always on the same thread
         private val cachedButterflyParams: HashMap<String, Map<String, String>> = hashMapOf()
 
         // This code only runs on API 30 and above.
@@ -61,47 +71,16 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         }
 
         // Reporter Handling
-        fun open(activity: Activity, apiKey: String) {
-            open(activity, apiKey, null)
-        }
-
-        // Reporter Handling via deep link
-        fun handleIncomingURI(activity: Activity, uri: Uri, apiKey: String) {
-            val urlParams: MutableMap<String, String> = extractParamsFromUri(uri)
-            if (urlParams.isEmpty()) return
-
-            val cachedKeys = urlParams.keys.sorted().joinToString(",")
-
-            fun handleResponse(backendParams: Map<String, String>) {
-                val extraParams = convertMapToQueryStringParams(backendParams)
-
-                if (extraParams.isEmpty()) {
-                    SdkLogger.log(TAG, "No need to handle deep link params. Aborting URL handling...")
-                } else {
-                    open(activity, apiKey, extraParams)
-                }
+        @JvmOverloads
+        fun open(activity: Activity, apiKey: String, extraParams: String? = null) {
+            val isRunningOnMainThread = Looper.getMainLooper() == Looper.myLooper()
+            if (!isRunningOnMainThread) {
+                SdkLogger.error(TAG, "`ButterflySdk.open` must be called on the main thread.")
+                return
             }
 
-            cachedButterflyParams[cachedKeys]?.let { cachedBackendParams ->
-                SdkLogger.log(TAG, "Using cached deep link params for keys: $cachedKeys")
-                handleResponse(cachedBackendParams)
-            } ?: run {
-                Communicator.fetchButterflyParamsFromURL(
-                    urlParams,
-                    appKey = apiKey,
-                    sdkVersion = Utils.BUTTERFLY_SDK_VERSION
-                ) { butterflyParams ->
-                    val backendParams = butterflyParams ?: return@fetchButterflyParamsFromURL
-                    cachedButterflyParams[cachedKeys] = backendParams
-                    handleResponse(backendParams)
-                }
-            }
-        }
-
-        private fun open(activity: Activity, apiKey: String, extraParams: String?) {
             Utils.saveContext(activity)
             if (apiKey.isEmpty()) return
-            if (webViewsCount != 0) return
 
             var languageCode = Locale.getDefault().language
 
@@ -153,6 +132,8 @@ class WebViewerActivity: Activity(), EventBus.Listener {
                 urlString += "&mobile-app-id=$it"
             }
 
+            if (!openedWebViews.add(urlString)) return
+
             activity.startActivity(
                 Intent(activity, WebViewerActivity::class.java)
                     .putExtra(IntentExtraKeys.URL, urlString)
@@ -160,32 +141,94 @@ class WebViewerActivity: Activity(), EventBus.Listener {
             )
         }
 
+        // Reporter Handling via deep link
+        fun handleIncomingURI(activity: Activity, uri: Uri, apiKey: String) {
+            Utils.saveContext(activity)
+            val looper = Looper.myLooper() ?: return
+            val callerHandler = Handler(looper)
+
+            bgThreadHandler.post {
+                val urlParams: MutableMap<String, String> = extractParamsFromUri(uri)
+                if (urlParams.isEmpty()) return@post
+
+                val cachedKeysKey = urlParams.keys.sorted().joinToString(",")
+
+                fun handleResponse(backendParams: Map<String, String>) {
+                    try {
+                        val extraParams = convertMapToQueryStringParams(backendParams)
+
+                        if (extraParams.isEmpty()) {
+                            SdkLogger.log(TAG, "No need to handle deep link params. Aborting URL handling...")
+                        } else {
+                            mainThreadHandler.post {
+                                open(activity, apiKey, extraParams)
+                            }
+                        }
+                    } catch (throwable: Throwable) {
+                        SdkLogger.error(TAG, throwable)
+                    }
+                }
+
+                cachedButterflyParams[cachedKeysKey]?.let { cachedBackendParams ->
+                    SdkLogger.log(TAG, "Using cached deep link params for keys: $cachedButterflyParams")
+                    handleResponse(cachedBackendParams)
+                } ?: run {
+                    if (pendingKeysRequest.contains(cachedKeysKey)) {
+                        callerHandler.postDelayed({
+                            // Try later, the response will be cached soon...
+                            handleIncomingURI(activity, uri, apiKey)
+                        }, 1000)
+                        return@post
+                    }
+
+                    pendingKeysRequest.add(cachedKeysKey)
+                    Communicator.fetchButterflyParamsFromURL(
+                        urlParams,
+                        appKey = apiKey,
+                        sdkVersion = Utils.BUTTERFLY_SDK_VERSION
+                    ) { backendParams ->
+                        bgThreadHandler.post {
+                            cachedButterflyParams[cachedKeysKey] = backendParams
+                            handleResponse(backendParams)
+                        }
+                    }
+                }
+            }
+        }
+
         private fun extractParamsFromUri(uri: Uri): MutableMap<String, String> {
             val params = mutableMapOf<String, String>()
 
-            if (uri.toString().isEmpty()) {
-                return params
-            }
+            if (uri.toString().isEmpty()) return params
 
-            // Works for both http(s):// and custom-scheme URIs like butterfly://
-            for (name in uri.queryParameterNames) {
-                val value = uri.getQueryParameter(name)
-                if (!name.isNullOrEmpty() && value != null) {
-                    params[name] = value
+            try {
+                // Works for both http(s):// and custom-scheme URIs like butterfly://
+                for (name in uri.queryParameterNames) {
+                        val value = uri.getQueryParameter(name)
+                        if (!name.isNullOrEmpty() && value != null) {
+                            params[name] = value
+                        }
                 }
+            } catch (throwable: Throwable) {
+                SdkLogger.error(TAG, throwable)
             }
 
             return params
         }
 
-        fun convertMapToQueryStringParams(resultParams: Map<String, String>?): String {
+        private fun convertMapToQueryStringParams(resultParams: Map<String, String>?): String {
             val params: Map<String, String> = resultParams ?: return ""
             if (params.isEmpty()) return ""
 
-            val queryItems = params.map { (key, value) ->
-                val encodedKey = Uri.encode(key)
-                val encodedValue = Uri.encode(value)
-                "$encodedKey=$encodedValue"
+            val queryItems = params.mapNotNull { (key, value) ->
+                try {
+                    val encodedKey = Uri.encode(key)
+                    val encodedValue = Uri.encode(value)
+                    "$encodedKey=$encodedValue"
+                } catch (throwable: Throwable) {
+                    SdkLogger.error(TAG, throwable)
+                    null
+                }
             }
 
             if (queryItems.isEmpty()) return ""
@@ -216,8 +259,6 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         @SuppressLint("SourceLockedOrientationActivity") // Actually I do want to lock it :)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
-        webViewsCount++
-        token = eventBus.addListener(this, AbortEvent::class.java)
 
         setContentView(R.layout.activity_bf_webview)
         layout = findViewById(R.id.main_layout)
@@ -241,6 +282,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
             }
         }
 
+        token = eventBus.addListener(this, AbortEvent::class.java)
         val abortButtonRelativeLayoutParams = RelativeLayout.LayoutParams(
                 35.dpToPx(),
                 35.dpToPx(),
@@ -356,6 +398,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 
         intent?.getStringExtra(IntentExtraKeys.URL)?.let { url ->
             initialUrl = url
+            openedWebViews.add(url)
             if (url.isEmpty()) return@let
             // Request headers only before loading URL
             Communicator.pingUrl(url, 5000) { isReachable ->
@@ -411,6 +454,10 @@ class WebViewerActivity: Activity(), EventBus.Listener {
     override fun onResume() {
         webView.alpha = 1f
 
+        if (initialUrl == null) {
+            finish()
+        }
+
         super.onResume()
     }
 
@@ -427,7 +474,9 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 
     override fun onDestroy() {
         token?.remove()
-        webViewsCount--
+        initialUrl?.let {
+            openedWebViews.remove(it)
+        }
 
         super.onDestroy()
     }
