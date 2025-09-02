@@ -22,16 +22,10 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-
-        // Optional: control icon colors
         WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
-
         window.setStatusBarColor(Color.TRANSPARENT);
         window.setNavigationBarColor(Color.TRANSPARENT);
-
         ImageButton button = findViewById(R.id.generate_button);
-
         final Activity activity = this;
 
         button.setOnClickListener(v ->

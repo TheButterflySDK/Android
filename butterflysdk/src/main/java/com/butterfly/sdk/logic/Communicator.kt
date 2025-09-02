@@ -24,11 +24,6 @@ internal class Communicator(private val urlString: String, private val requestBo
 
         // Ref: https://stackoverflow.com/a/3584332/2735029
         fun pingUrl(url: String, timeout: Int, callback: (Boolean) -> Unit) {
-//                var url = url
-//                url = url.replaceFirst(
-//                    "^https".toRegex(),
-//                    "http"
-//                ) // (???) Otherwise an exception may be thrown on invalid SSL certificates.
             val looper = Looper.myLooper() ?: return
             val callerHandler = Handler(looper)
             bgThreadHandler.post {
@@ -148,16 +143,16 @@ internal class Communicator(private val urlString: String, private val requestBo
                 if (responseCode == HttpsURLConnection.HTTP_OK) {
                     responseString = connection.inputStream.bufferedReader()
                         .use { it.readText() }  // defaults to UTF-8
-//                        Log.d("Pretty Printed JSON :", responseString)
+                    // SdkLogger.log(TAG, "Pretty Printed JSON: $responseString")
                 } else {
-                    //Log.e("HTTPS URL CONNECTION ERROR", responseCode.toString())
+                    // SdkLogger.error(TAG, "HTTP error code: $responseCode HTTPS URL CONNECTION ERROR")
                 }
 
                 callerHandler.post {
                     callback.invoke(responseString)
                 }
             } catch (e: Throwable) {
-//                    e.printStackTrace()
+                //SdkLogger.error(TAG, e)
             }
         }
     }
