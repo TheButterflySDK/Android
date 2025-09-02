@@ -29,21 +29,50 @@ In your app-level "build.gradle" file, put:
    }
 ```
 
-## Usage
+## Usage (APIs)
 
 To recognize your app in TheButterflySDK servers you'll need an application key. You can set it via code, as demonstrated here.
 In order to present our reporter, we'll need the current Activity.
 
-#### Example in Java (pretty much like Kotlin 🤓)
+### Open The Butterfly
+Whenever you wish to open our screen, simply call:
 
-```Java
-// Whenever you wish to open our screen, simply call:
-ButterflySdk.openReporter(activity, "YOUR_API_KEY");
+#### Java
+```java
+ButterflySdk.open(activity, "YOUR_API_KEY");
+```
+
+#### Kotlin 🤓
+```kotlin
+ButterflySdk.open(activity, "YOUR_API_KEY")
+```
+
+### Notify About Deeplink Handling
+
+#### Kotlin 🤓
+```kotlin
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    // ...
+    ButterflySdk.handleDeepLink(activity, /* linkUriRepresentation | linkStringRepresentation */, "YOUR_API_KEY");
+    // OR:
+    ButterflySdk.handleIncomingIntent(activity, intent, "YOUR_API_KEY");
+    // ...
+}
+
+@Override
+protected void onNewIntent(Intent intent) {
+    // ...
+    ButterflySdk.handleDeepLink(activity, /* linkUriRepresentation | linkStringRepresentation */, "YOUR_API_KEY");
+    // OR:
+    ButterflySdk.handleIncomingIntent(activity, intent, "YOUR_API_KEY");
+    // ...
+}
 ```
 
 ## Integration tests
-#### How?
-You can easily verify your application key 🔑 by simply running the SDK in **DEBUG mode**.
+### How?
+You can easily verify your API key 🔑 by simply running the SDK in **DEBUG mode** and start a chat with Betty 💬.
 
 This will cause our servers to skip the part of sending reports to real live support centers, they will only verify the API key. Eventually you'll get success / failure result.
 
