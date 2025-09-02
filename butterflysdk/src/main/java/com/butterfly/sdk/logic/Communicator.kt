@@ -50,7 +50,7 @@ internal class Communicator(private val urlString: String, private val requestBo
             urlParams: MutableMap<String, String>?,
             appKey: String,
             sdkVersion: String,
-            callback: (Map<String, String>?) -> Unit
+            callback: (Map<String, String>) -> Unit
         ) {
             val jsonBody = mapOf(
                 "apiKey" to appKey,
@@ -65,9 +65,9 @@ internal class Communicator(private val urlString: String, private val requestBo
             val callerHandler = Handler(looper)
 
             bgThreadHandler.post {
-                var resultParams: Map<String, String>? = null
-                try {
+                var resultParams: Map<String, String> = mapOf()
 
+                try {
                     val connection = url.openConnection() as HttpsURLConnection
                     connection.requestMethod = "POST"
                     connection.setRequestProperty("Content-Type", "application/json")
