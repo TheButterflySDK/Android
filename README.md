@@ -47,7 +47,7 @@ ButterflySdk.open(activity, "YOUR_API_KEY");
 ButterflySdk.open(activity, "YOUR_API_KEY")
 ```
 
-### Notify About Deeplink Handling
+### Forward the deep link to the SDK for handling
 
 #### Kotlin 🤓
 ```kotlin
