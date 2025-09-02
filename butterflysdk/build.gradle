@@ -5,7 +5,7 @@ plugins {
 }
 
 ext {
-    TheButterflySdkVersion = '2.1.1'
+    TheButterflySdkVersion = '2.2.0'
 }
 
 group = 'com.github.TheButterflySdk'
@@ -13,6 +13,7 @@ version = ext.TheButterflySdkVersion
 
 android {
     compileSdkVersion 34
+    namespace = 'com.butterfly.sdk'
 
     defaultConfig {
         minSdkVersion 19

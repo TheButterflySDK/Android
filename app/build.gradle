@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 34
+    namespace "com.example.butterflyhost"
+    compileSdkVersion 35
     defaultConfig {
         applicationId "com.example.butterflyhost"
-        minSdkVersion 23
-        targetSdkVersion 34
+        minSdkVersion 27
+        targetSdkVersion 35
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -28,10 +29,12 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation "androidx.core:core-ktx:1.13.1"
+
     if (shouldUseLocal) {
         implementation project(path: ':butterflysdk')
     } else {
         // Make sure you're aiming to the latest version available here: https://jitpack.io/#TheButterflySDK/Android
-        implementation 'com.github.TheButterflySDK:Android:2.1.1'
+        implementation 'com.github.TheButterflySDK:Android:2.2.0'
     }
 }
