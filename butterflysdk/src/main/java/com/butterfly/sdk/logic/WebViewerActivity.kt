@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.view.WindowInsets
 import android.webkit.WebView
 import android.widget.Button
@@ -40,16 +41,25 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         private val eventBus = EventBus()
         private const val SHOULD_DISAPPEAR_ON_BLUR: Boolean = false
         private var webViewsCount = 0
-
-        val TAG: String get() {
-            return WebViewerActivity::class.java.simpleName
-        }
         var languageCodeToOverride: String? = null
         var countryCodeToOverride: String? = null
         var customColorHexaString: String? = null // May be: "0xFF91BA48", "FF91BA48", "91BA48"
 
+        val TAG: String get() {
+            return WebViewerActivity::class.java.simpleName
+        }
+
         internal val urlWhiteList: HashSet<String> = HashSet()
         private val cachedButterflyParams: HashMap<String, Map<String, String>> = hashMapOf()
+
+        // This code only runs on API 30 and above.
+        fun getFrameworkInsets(window: Window): Int {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return 0
+
+            val systemBarInsets = window.decorView.rootWindowInsets?.getInsets(WindowInsets.Type.systemBars())
+            return systemBarInsets?.top ?: 0
+        }
+
         // Reporter Handling
         fun open(activity: Activity, apiKey: String) {
             open(activity, apiKey, null)
@@ -208,16 +218,25 @@ class WebViewerActivity: Activity(), EventBus.Listener {
 
         webViewsCount++
         token = eventBus.addListener(this, AbortEvent::class.java)
-        layout = RelativeLayout(this)
+
+        setContentView(R.layout.activity_bf_webview)
+        layout = findViewById(R.id.main_layout)
         layout.addView(webView, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
-        setContentView(layout)
+        getFrameworkInsets(window).takeIf { it > 0 }?.let {
+            // Handle system bar insets manually (for edge-to-edge hosts)
+            layout.setPadding(0, it, 0,0)
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            webView.setOnApplyWindowInsetsListener { v, insets ->
+            // Handle IME insets manually (for edge-to-edge hosts) to solve keyboard and status bar issue
+            layout.setOnApplyWindowInsetsListener { v, insets ->
+                // Keyboard
                 val ime = insets.getInsets(WindowInsets.Type.ime())
+                // Status bar
                 val bars = insets.getInsets(WindowInsets.Type.systemBars())
-                val bottom = maxOf(ime.bottom, bars.bottom)
-                v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, bottom + 500)
+                // The "back", "home", and "app switcher" toolbar, AKA "navigation bar".
+                val navigationBarInsets = insets.getInsets(WindowInsets.Type.navigationBars())
+                v.setPadding(0, bars.top, 0, navigationBarInsets.bottom.coerceAtLeast(ime.bottom))
                 insets
             }
         }
@@ -306,8 +325,8 @@ class WebViewerActivity: Activity(), EventBus.Listener {
             }
 
         })
-        webView.webViewClient = butterflyWebViewClient
 
+        webView.webViewClient = butterflyWebViewClient
         webView.settings.setSupportMultipleWindows(true)
 
         window.decorView.apply {
@@ -372,11 +391,18 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         }
     }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+
+        webView.alpha = if (hasFocus) 1f else 0f
+    }
+
     override fun onPause() {
         if (SHOULD_DISAPPEAR_ON_BLUR) {
             // leave a blank screen because in any case it will exit by itself (so eventually it will hide the reporter from the "recent apps" view).
             webView.removeSelf()
         }
+
         webView.alpha = 0f
 
         super.onPause()
