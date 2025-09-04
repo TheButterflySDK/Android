@@ -74,7 +74,4 @@ protected void onNewIntent(Intent intent) {
 ### How?
 You can easily verify your API key 🔑 by simply running the SDK in **DEBUG mode** and start a chat with Betty 💬.
 
-This will cause our servers to skip the part of sending reports to real live support centers, they will only verify the API key. Eventually you'll get success / failure result.
-
-
 ### Enjoy and good luck ❤️
