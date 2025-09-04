@@ -49,7 +49,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
         var countryCodeToOverride: String? = null
         var customColorHexaString: String? = null // May be: "0xFF91BA48", "FF91BA48", "91BA48"
         private val mainThreadHandler: Handler by lazy { Handler(Looper.getMainLooper()) }
-        private val pendingKeysRequest = mutableSetOf<String>()
+        private val pendingLinkRequests = mutableSetOf<String>()
         private val bgThreadHandler: Handler by lazy {
             val handlerThread = HandlerThread("WebViewerActivity-BG-Thread")
             handlerThread.start()
@@ -151,7 +151,7 @@ class WebViewerActivity: Activity(), EventBus.Listener {
                 val urlParams: MutableMap<String, String> = extractParamsFromUri(uri)
                 if (urlParams.isEmpty()) return@post
 
-                val cachedKeysKey = urlParams.keys.sorted().joinToString(",")
+                val cachedResultKey = urlParams.entries.toList().sortedBy { it.key }.joinToString(",")
 
                 fun handleResponse(backendParams: Map<String, String>) {
                     try {
@@ -169,11 +169,11 @@ class WebViewerActivity: Activity(), EventBus.Listener {
                     }
                 }
 
-                cachedButterflyParams[cachedKeysKey]?.let { cachedBackendParams ->
+                cachedButterflyParams[cachedResultKey]?.let { cachedBackendParams ->
                     SdkLogger.log(TAG, "Using cached deep link params for keys: $cachedButterflyParams")
                     handleResponse(cachedBackendParams)
                 } ?: run {
-                    if (pendingKeysRequest.contains(cachedKeysKey)) {
+                    if (pendingLinkRequests.contains(cachedResultKey)) {
                         callerHandler.postDelayed({
                             // Try later, the response will be cached soon...
                             handleIncomingURI(activity, uri, apiKey)
@@ -181,14 +181,14 @@ class WebViewerActivity: Activity(), EventBus.Listener {
                         return@post
                     }
 
-                    pendingKeysRequest.add(cachedKeysKey)
+                    pendingLinkRequests.add(cachedResultKey)
                     Communicator.fetchButterflyParamsFromURL(
                         urlParams,
                         appKey = apiKey,
                         sdkVersion = Utils.BUTTERFLY_SDK_VERSION
                     ) { backendParams ->
                         bgThreadHandler.post {
-                            cachedButterflyParams[cachedKeysKey] = backendParams
+                            cachedButterflyParams[cachedResultKey] = backendParams
                             handleResponse(backendParams)
                         }
                     }
